@@ -54,7 +54,6 @@ function createDovetail(params) {
   const tanA = Math.tan(tailAngle * Math.PI / 180)
 
   const tails = []
-  const pins = []
   const totalTailW = sectionW * pinRatio
   const gap = (sectionW - totalTailW) / (tailCount + 1)
   const tailTopW = totalTailW / tailCount
@@ -135,53 +134,112 @@ function createDovetail(params) {
 
 function createMitered(params) {
   const { sectionW, sectionH, armLength, tenonRatio } = params
+  const t = armLength
   const tenonW = sectionW * tenonRatio
   const tenonH = sectionH * tenonRatio
-  const t = armLength
+  const mortiseDepth = Math.min(sectionW, sectionH) * 0.45
 
-  function buildVertical() {
-    const parts = []
-    parts.push(box(sectionW, t, sectionH, 0, -t / 2, 0))
-    const topCut = []
-    topCut.push(box(tenonW, tenonH, sectionH, 0, 0, 0))
-    topCut.push(box(sectionW, tenonH, tenonW, 0, 0, 0))
-    topCut.push(box(tenonW, sectionH, tenonW, 0, 0, 0))
-    const cornerCut = box(tenonW, tenonH, tenonW, 0, 0, 0)
-    parts.push(box(sectionW, sectionH, sectionH, 0, sectionH / 2, 0))
-    parts.push(box(sectionW, sectionH, sectionH, 0, sectionH / 2, 0))
-    return mergeGeometries([
-      box(sectionW, t + sectionH / 2, sectionH, 0, -t / 2 + sectionH / 4, 0),
-      box(tenonW, sectionH, sectionH, 0, sectionH / 2 + tenonH / 4, 0)
-    ])
-  }
+  const postShapes = []
+  postShapes.push(box(sectionW, t, sectionH, 0, -t / 2, 0))
+  postShapes.push(
+    box(tenonW, sectionH, tenonH,
+      sectionW / 2 + mortiseDepth / 2 - tenonW / 2,
+      sectionH / 4,
+      0)
+  )
+  postShapes.push(
+    box(tenonH, sectionH, tenonW,
+      0,
+      -sectionH / 4,
+      sectionH / 2 + mortiseDepth / 2 - tenonW / 2)
+  )
+  const postGeo = mergeGeometries(postShapes)
 
-  function buildXArm() {
-    const parts = []
-    parts.push(box(t, sectionH, sectionW, t / 2 - tenonW / 2, 0, 0))
-    parts.push(box(tenonW, tenonH, sectionW, -tenonW / 2 + tenonW / 2, 0, 0))
-    parts.push(box(sectionH, sectionH, sectionW, 0, 0, 0))
-    return mergeGeometries([
-      box(t + sectionW / 2, sectionH, sectionW, t / 2 - sectionW / 4, 0, 0),
-      box(tenonW, tenonH, tenonW, -tenonW / 2, 0, -tenonW / 2)
-    ])
-  }
+  const xArmShapes = []
+  xArmShapes.push(box(t, sectionH, sectionW, t / 2, 0, 0))
+  xArmShapes.push(
+    box(mortiseDepth, (sectionH - tenonH) / 2, sectionW,
+      -mortiseDepth / 2,
+      sectionH / 4 + tenonH / 4,
+      0)
+  )
+  xArmShapes.push(
+    box(mortiseDepth, (sectionH - tenonH) / 2, sectionW,
+      -mortiseDepth / 2,
+      -sectionH / 4 - tenonH / 4,
+      0)
+  )
+  xArmShapes.push(
+    box(mortiseDepth, tenonH, (sectionW - tenonW) / 2,
+      -mortiseDepth / 2,
+      0,
+      -sectionW / 4 - tenonW / 4)
+  )
+  xArmShapes.push(
+    box(mortiseDepth, tenonH, (sectionW - tenonW) / 2,
+      -mortiseDepth / 2,
+      0,
+      sectionW / 4 + tenonW / 4)
+  )
+  xArmShapes.push(
+    box(tenonW, sectionH, tenonW,
+      0,
+      -sectionH / 4,
+      sectionW / 2 + mortiseDepth / 2 - tenonW / 2)
+  )
+  const xArmGeo = mergeGeometries(xArmShapes)
 
-  function buildZArm() {
-    return mergeGeometries([
-      box(sectionW, sectionH, t + sectionH / 2, 0, 0, t / 2 - sectionH / 4),
-      box(tenonW, tenonH, tenonW, -tenonW / 2, 0, -tenonW / 2)
-    ])
-  }
-
-  const postGeo = mergeGeometries([
-    box(sectionW, t + sectionH / 2, sectionH, 0, -t / 2 + sectionH / 4, 0)
-  ])
-  const xArmGeo = mergeGeometries([
-    box(t + sectionW / 2, sectionH, sectionW, t / 2 - sectionW / 4, sectionH / 4, 0)
-  ])
-  const zArmGeo = mergeGeometries([
-    box(sectionW, sectionH, t + sectionH / 2, 0, sectionH / 4, t / 2 - sectionH / 4)
-  ])
+  const zArmShapes = []
+  zArmShapes.push(box(sectionW, sectionH, t, 0, 0, t / 2))
+  zArmShapes.push(
+    box((sectionW - tenonH) / 2, sectionH, mortiseDepth,
+      -sectionW / 4 - tenonH / 4,
+      sectionH / 4,
+      -mortiseDepth / 2)
+  )
+  zArmShapes.push(
+    box((sectionW - tenonH) / 2, sectionH, mortiseDepth,
+      sectionW / 4 + tenonH / 4,
+      sectionH / 4,
+      -mortiseDepth / 2)
+  )
+  zArmShapes.push(
+    box(tenonH, (sectionH - tenonH) / 2, mortiseDepth,
+      0,
+      sectionH / 4 + tenonH / 4,
+      -mortiseDepth / 2)
+  )
+  zArmShapes.push(
+    box(tenonH, (sectionH - tenonH) / 2, mortiseDepth,
+      0,
+      -sectionH / 4 - tenonH / 4,
+      -mortiseDepth / 2)
+  )
+  zArmShapes.push(
+    box((sectionW - tenonW) / 2, sectionH, mortiseDepth,
+      -sectionW / 4 - tenonW / 4,
+      -sectionH / 4,
+      -mortiseDepth / 2)
+  )
+  zArmShapes.push(
+    box((sectionW - tenonW) / 2, sectionH, mortiseDepth,
+      sectionW / 4 + tenonW / 4,
+      -sectionH / 4,
+      -mortiseDepth / 2)
+  )
+  zArmShapes.push(
+    box(tenonW, (sectionH - tenonW) / 2, mortiseDepth,
+      0,
+      -sectionH / 4 + tenonW / 4,
+      -mortiseDepth / 2)
+  )
+  zArmShapes.push(
+    box(tenonW, (sectionH - tenonW) / 2, mortiseDepth,
+      0,
+      -sectionH / 4 - tenonW / 4 - (sectionH - tenonW) / 2,
+      -mortiseDepth / 2)
+  )
+  const zArmGeo = mergeGeometries(zArmShapes)
 
   return [
     {
@@ -192,7 +250,7 @@ function createMitered(params) {
       explodeDir: new THREE.Vector3(0, -1, 0),
       rawSize: { w: sectionW, h: t + sectionH, l: sectionH },
       netSize: { w: sectionW, h: t, l: sectionH },
-      allowance: `榫舌: ${tenonW.toFixed(0)}×${tenonH.toFixed(0)}mm`,
+      allowance: `榫舌: +X向 ${tenonW.toFixed(0)}×${tenonH.toFixed(0)}, +Z向 ${tenonH.toFixed(0)}×${tenonW.toFixed(0)}`,
       stresses: [{ dir: new THREE.Vector3(0, -1, 0), length: 40, label: '压力' }]
     },
     {
@@ -203,7 +261,7 @@ function createMitered(params) {
       explodeDir: new THREE.Vector3(1, 0, 0),
       rawSize: { w: t + sectionW, h: sectionH, l: sectionW },
       netSize: { w: t, h: sectionH, l: sectionW },
-      allowance: `榫舌: ${tenonW.toFixed(0)}×${tenonH.toFixed(0)}mm`,
+      allowance: `卯口(-X向): ${tenonW.toFixed(0)}×${tenonH.toFixed(0)}, 榫舌(+Z向): ${tenonW.toFixed(0)}×${tenonW.toFixed(0)}`,
       stresses: [{ dir: new THREE.Vector3(-1, 0, 0), length: 40, label: '压力' }]
     },
     {
@@ -214,7 +272,7 @@ function createMitered(params) {
       explodeDir: new THREE.Vector3(0, 0, 1),
       rawSize: { w: sectionW, h: sectionH, l: t + sectionH },
       netSize: { w: sectionW, h: sectionH, l: t },
-      allowance: `榫舌: ${tenonW.toFixed(0)}×${tenonH.toFixed(0)}mm`,
+      allowance: `卯口(-Z向): 立柱榫+长边榫, 深度 ${mortiseDepth.toFixed(0)}mm`,
       stresses: [{ dir: new THREE.Vector3(0, 0, -1), length: 40, label: '压力' }]
     }
   ]
@@ -225,19 +283,16 @@ function createWedge(params) {
   const armLen = 100
   const slotW = wedgeWidth
   const slotH = sectionH * 0.6
+  const tongueH = sectionH - slotH
 
   const leftShapes = []
   leftShapes.push(box(armLen, sectionH, sectionW, -armLen / 2 - tenonLength / 2, 0, 0))
-  leftShapes.push(box(tenonLength, sectionH, sectionW, tenonLength / 2, 0, 0))
-  leftShapes.push(box(tenonLength, slotH / 2, sectionW, tenonLength / 2, sectionH / 2 - slotH / 4, 0))
-  leftShapes.push(box(tenonLength, slotH / 2, sectionW, tenonLength / 2, -sectionH / 2 + slotH / 4, 0))
+  leftShapes.push(box(tenonLength, tongueH, sectionW, tenonLength / 2, 0, 0))
   const leftGeo = mergeGeometries(leftShapes)
 
   const rightShapes = []
   rightShapes.push(box(armLen, sectionH, sectionW, armLen / 2 + tenonLength / 2, 0, 0))
-  rightShapes.push(box(tenonLength, sectionH, sectionW, -tenonLength / 2, 0, 0))
-  rightShapes.push(box(tenonLength, slotH / 2, sectionW, -tenonLength / 2, sectionH / 2 - slotH / 4, 0))
-  rightShapes.push(box(tenonLength, slotH / 2, sectionW, -tenonLength / 2, -sectionH / 2 + slotH / 4, 0))
+  rightShapes.push(box(tenonLength, tongueH, sectionW, -tenonLength / 2, 0, 0))
   const rightGeo = mergeGeometries(rightShapes)
 
   const wedgeGeo = mergeGeometries([
@@ -253,7 +308,7 @@ function createWedge(params) {
       explodeDir: new THREE.Vector3(-1, 0, 0),
       rawSize: { w: armLen + tenonLength, h: sectionH, l: sectionW },
       netSize: { w: armLen, h: sectionH, l: sectionW },
-      allowance: `榫头长: ${tenonLength}mm, 开口槽: ${slotW.toFixed(0)}×${slotH.toFixed(0)}mm`,
+      allowance: `榫头长: ${tenonLength}mm, 开口槽: ${slotW.toFixed(0)}×${slotH.toFixed(0)}mm, 舌片高: ${tongueH.toFixed(0)}mm`,
       stresses: [{ dir: new THREE.Vector3(1, 0, 0), length: 40, label: '拉力' }]
     },
     {
@@ -264,7 +319,7 @@ function createWedge(params) {
       explodeDir: new THREE.Vector3(1, 0, 0),
       rawSize: { w: armLen + tenonLength, h: sectionH, l: sectionW },
       netSize: { w: armLen, h: sectionH, l: sectionW },
-      allowance: `榫头长: ${tenonLength}mm, 开口槽: ${slotW.toFixed(0)}×${slotH.toFixed(0)}mm`,
+      allowance: `榫头长: ${tenonLength}mm, 开口槽: ${slotW.toFixed(0)}×${slotH.toFixed(0)}mm, 舌片高: ${tongueH.toFixed(0)}mm`,
       stresses: [{ dir: new THREE.Vector3(-1, 0, 0), length: 40, label: '拉力' }]
     },
     {

@@ -13,6 +13,7 @@ export class SceneManager {
     this.showAnnotations = true
     this.currentJoint = null
     this.currentParams = null
+    this._animId = null
     this._init()
     this._animate()
   }
@@ -259,13 +260,16 @@ export class SceneManager {
   }
 
   _animate = () => {
-    requestAnimationFrame(this._animate)
+    this._animId = requestAnimationFrame(this._animate)
     this.controls.update()
     this.renderer.render(this.scene, this.camera)
   }
 
   dispose() {
-    cancelAnimationFrame(this._animId)
+    if (this._animId !== null) {
+      cancelAnimationFrame(this._animId)
+      this._animId = null
+    }
     this.renderer.dispose()
     if (this.renderer.domElement.parentNode) {
       this.renderer.domElement.parentNode.removeChild(this.renderer.domElement)
