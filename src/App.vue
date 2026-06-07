@@ -12,7 +12,7 @@
         @explode-change="setExplode"
         @toggle-explode="toggleExplode"
         @animate-explode="animateExplode"
-        @toggle-wireframe="wireframeMode = !wireframeMode; if(scene) scene.setWireframe(wireframeMode)"
+        @toggle-wireframe="wireframeMode = !wireframeMode"
         @toggle-annotations="toggleAnnotations"
         @export-bom="showBom = true"
       />
@@ -50,7 +50,7 @@
             @explode-change="setExplode"
             @toggle-explode="toggleExplode"
             @animate-explode="animateExplode"
-            @toggle-wireframe="wireframeMode = !wireframeMode; if(scene) scene.setWireframe(wireframeMode)"
+            @toggle-wireframe="wireframeMode = !wireframeMode"
             @toggle-annotations="toggleAnnotations"
             @export-bom="showBom = true; mobilePanelOpen = false"
           />

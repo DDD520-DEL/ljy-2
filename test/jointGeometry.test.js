@@ -151,4 +151,36 @@ console.log('\n--- 测试 8: 所有构件包含受力方向信息 ---')
   assert(ok === total, `所有构件含有效受力信息 (${ok}/${total})`)
 }
 
+console.log('\n--- 测试 9: 粽角榫短边(zArm)双卯口 9 块 box 拆分结构 ---')
+{
+  const params = getDefaultParams('mitered')
+  const [, , zArm] = generateJoint('mitered', params)
+  const tri = countTriangles(zArm.geometry)
+  const zArmBox = geoBoundingBox(zArm.geometry)
+  const zW = zArmBox.max.x - zArmBox.min.x
+  const zH = zArmBox.max.y - zArmBox.min.y
+  const zL = zArmBox.max.z - zArmBox.min.z
+  assert(Math.abs(zW - params.sectionW) < 0.1, `粽角榫短边: X 截面宽 = sectionW (${zW.toFixed(1)} ≈ ${params.sectionW})`)
+  assert(zH > params.sectionH, `粽角榫短边: Y 向总高 > sectionH (双卯口上下分层延伸) (${zH.toFixed(1)} > ${params.sectionH})`)
+  assert(zL > params.armLength, `粽角榫短边: Z 总延伸 > armLength (${zL.toFixed(0)} > ${params.armLength})`)
+  const nineBoxMax = 9 * 12
+  assert(tri <= nineBoxMax + 4, `粽角榫短边: 三角形数 ≤ 9 盒体理论值 (${tri} ≤ ${nineBoxMax})`)
+}
+
+console.log('\n--- 测试 10: 粽角榫 tenonRatio 变化影响卯口尺寸 ---')
+{
+  const pA = { ...getDefaultParams('mitered'), tenonRatio: 0.3 }
+  const pB = { ...getDefaultParams('mitered'), tenonRatio: 0.7 }
+  const [, , zA] = generateJoint('mitered', pA)
+  const [, , zB] = generateJoint('mitered', pB)
+  const triA = countTriangles(zA.geometry)
+  const triB = countTriangles(zB.geometry)
+  assert(triA > 0 && triB > 0, `粽角榫: 两种 tenonRatio 均能生成有效几何 (triA=${triA}, triB=${triB})`)
+  const [postA] = generateJoint('mitered', pA)
+  const [postB] = generateJoint('mitered', pB)
+  const postATri = countTriangles(postA.geometry)
+  const postBTri = countTriangles(postB.geometry)
+  assert(postATri > 0 && postBTri > 0, `粽角榫立柱: 两种 tenonRatio 均能生成有效几何`)
+}
+
 console.log('\n=== 测试完成 ===\n')

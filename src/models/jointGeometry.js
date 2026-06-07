@@ -190,49 +190,58 @@ function createMitered(params) {
   const xArmGeo = mergeGeometries(xArmShapes)
 
   const zArmShapes = []
+  // 短边主体：沿 Z 轴正向延伸
   zArmShapes.push(box(sectionW, sectionH, t, 0, 0, t / 2))
+  // 立柱榫卯口-左侧壁（Y上半，X负方向保留部分）
   zArmShapes.push(
     box((sectionW - tenonH) / 2, sectionH, mortiseDepth,
       -sectionW / 4 - tenonH / 4,
       sectionH / 4,
       -mortiseDepth / 2)
   )
+  // 立柱榫卯口-右侧壁（Y上半，X正方向保留部分）
   zArmShapes.push(
     box((sectionW - tenonH) / 2, sectionH, mortiseDepth,
       sectionW / 4 + tenonH / 4,
       sectionH / 4,
       -mortiseDepth / 2)
   )
+  // 立柱榫卯口-上侧壁（Y上半，Y正方向保留部分）
   zArmShapes.push(
     box(tenonH, (sectionH - tenonH) / 2, mortiseDepth,
       0,
       sectionH / 4 + tenonH / 4,
       -mortiseDepth / 2)
   )
+  // 立柱榫卯口-下侧壁（Y上半，中间横隔板，分隔上下双卯口）
   zArmShapes.push(
     box(tenonH, (sectionH - tenonH) / 2, mortiseDepth,
       0,
       -sectionH / 4 - tenonH / 4,
       -mortiseDepth / 2)
   )
+  // 长边榫卯口-左侧壁（Y下半，X负方向保留部分）
   zArmShapes.push(
     box((sectionW - tenonW) / 2, sectionH, mortiseDepth,
       -sectionW / 4 - tenonW / 4,
       -sectionH / 4,
       -mortiseDepth / 2)
   )
+  // 长边榫卯口-右侧壁（Y下半，X正方向保留部分）
   zArmShapes.push(
     box((sectionW - tenonW) / 2, sectionH, mortiseDepth,
       sectionW / 4 + tenonW / 4,
       -sectionH / 4,
       -mortiseDepth / 2)
   )
+  // 长边榫卯口-上侧壁（Y下半，紧邻中间隔板下侧）
   zArmShapes.push(
     box(tenonW, (sectionH - tenonW) / 2, mortiseDepth,
       0,
       -sectionH / 4 + tenonW / 4,
       -mortiseDepth / 2)
   )
+  // 长边榫卯口-下侧壁（Y下半，Y负方向保留部分）
   zArmShapes.push(
     box(tenonW, (sectionH - tenonW) / 2, mortiseDepth,
       0,
@@ -240,7 +249,6 @@ function createMitered(params) {
       -mortiseDepth / 2)
   )
   const zArmGeo = mergeGeometries(zArmShapes)
-
   return [
     {
       id: 'post',

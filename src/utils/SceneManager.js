@@ -78,7 +78,14 @@ export class SceneManager {
 
   clearJoint() {
     for (const m of this.componentMeshes) {
-      this.scene.remove(m.group)
+      this.scene.remove(m)
+      m.traverse(obj => {
+        if (obj.geometry) obj.geometry.dispose()
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach(mat => mat.dispose())
+          else obj.material.dispose()
+        }
+      })
     }
     this.componentMeshes = []
     this._clearAnnotations()
