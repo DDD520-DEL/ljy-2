@@ -452,6 +452,7 @@ const emit = defineEmits([
   'delete-project',
   'rename-project',
   'refresh-projects',
+  'refresh-cloud',
   'upload-to-cloud',
   'download-from-cloud',
   'logout',
@@ -574,10 +575,16 @@ function closeUploadDialog() {
 function doUpload() {
   if (!uploadTarget.value) return
   uploading.value = true
-  emit('upload-to-cloud', uploadTarget.value.id)
-  setTimeout(() => {
-    closeUploadDialog()
-  }, 600)
+  uploadError.value = ''
+  emit('upload-to-cloud', uploadTarget.value.id,
+    () => {
+      closeUploadDialog()
+    },
+    (err) => {
+      uploading.value = false
+      uploadError.value = err || '上传失败'
+    }
+  )
 }
 
 function handleDownload(project) {
@@ -585,6 +592,6 @@ function handleDownload(project) {
 }
 
 function handleRefreshCloud() {
-  emit('refresh-projects')
+  emit('refresh-cloud')
 }
 </script>

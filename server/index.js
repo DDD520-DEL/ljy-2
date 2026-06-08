@@ -40,7 +40,7 @@ async function ensureDemoUser() {
   const hash = bcrypt.hashSync(DEMO_PASSWORD, 10)
   const now = Date.now()
   const newUser = {
-    id: Date.now(),
+    id: generateId(),
     username: DEMO_USERNAME,
     password_hash: hash,
     created_at: now
@@ -72,7 +72,7 @@ app.post('/api/auth/register', async (req, res) => {
   const hash = bcrypt.hashSync(password, 10)
   const now = Date.now()
   const newUser = {
-    id: now,
+    id: generateId(),
     username: name,
     password_hash: hash,
     created_at: now

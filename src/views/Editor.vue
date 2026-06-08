@@ -26,6 +26,7 @@
           @delete-project="handleDeleteProject"
           @rename-project="handleRenameProject"
           @refresh-projects="refreshProjects"
+          @refresh-cloud="refreshCloudProjects"
           @upload-to-cloud="handleUploadToCloud"
           @download-from-cloud="handleDownloadFromCloud"
           @logout="handleLogout"
@@ -106,6 +107,7 @@
               @delete-project="handleDeleteProject"
               @rename-project="handleRenameProject"
               @refresh-projects="refreshProjects"
+              @refresh-cloud="refreshCloudProjects"
               @upload-to-cloud="handleUploadToCloud"
               @download-from-cloud="handleDownloadFromCloud"
               @logout="handleLogout"
@@ -481,15 +483,17 @@ function handleRenameProject(id, newName, onSuccess, onError) {
   }
 }
 
-async function handleUploadToCloud(localProjectId) {
+async function handleUploadToCloud(localProjectId, onSuccess, onError) {
   if (!auth.isLoggedIn()) {
     showToast('请先登录后再上传')
+    onError && onError('请先登录')
     router.push('/login')
     return
   }
   const local = loadProject(localProjectId)
   if (!local) {
     showToast('本地项目不存在')
+    onError && onError('本地项目不存在')
     return
   }
   syncLoading.value = true
@@ -497,8 +501,10 @@ async function handleUploadToCloud(localProjectId) {
     const result = await api.saveProject(local.name, local.data)
     await refreshCloudProjects()
     showToast(`已上传到云端：${result.name}`)
+    onSuccess && onSuccess()
   } catch (e) {
     showToast(e.message || '上传失败')
+    onError && onError(e.message || '上传失败')
   } finally {
     syncLoading.value = false
   }
