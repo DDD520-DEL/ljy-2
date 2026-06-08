@@ -279,6 +279,9 @@ function swapSides() {
   rightExplode.value = tmpExplode
   rightWireframe.value = tmpWireframe
   rightAnnotations.value = tmpAnnotations
+
+  loadLeftJoint()
+  loadRightJoint()
 }
 
 function syncFromLeft() {
