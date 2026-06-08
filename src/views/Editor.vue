@@ -21,6 +21,8 @@
           @toggle-wireframe="wireframeMode = !wireframeMode"
           @toggle-annotations="toggleAnnotations"
           @export-bom="showBom = true"
+          @export-stl-all="handleExportSTLAll"
+          @export-stl-separate="handleExportSTLSeparate"
           @save-project="handleSaveProject"
           @load-project="handleLoadProject"
           @delete-project="handleDeleteProject"
@@ -102,6 +104,8 @@
               @toggle-wireframe="wireframeMode = !wireframeMode"
               @toggle-annotations="toggleAnnotations"
               @export-bom="showBom = true; mobilePanelOpen = false"
+              @export-stl-all="() => { handleExportSTLAll(); mobilePanelOpen = false }"
+              @export-stl-separate="() => { handleExportSTLSeparate(); mobilePanelOpen = false }"
               @save-project="handleSaveProject"
               @load-project="id => { handleLoadProject(id); mobilePanelOpen = false }"
               @delete-project="handleDeleteProject"
@@ -393,6 +397,43 @@ function toggleAnnotations() {
   showAnnotations.value = !showAnnotations.value
   if (scene.value) scene.value.setShowAnnotations(showAnnotations.value)
   addHistory(showAnnotations.value ? '显示标注' : '隐藏标注', 'toggle-annotations')
+}
+
+function getSTLFilename(suffix = '') {
+  const base = currentProjectName.value || currentJointInfo.value?.name || '榫卯模型'
+  const safe = base.replace(/[\\/:*?"<>|]/g, '_')
+  const date = new Date().toISOString().slice(0, 10)
+  return suffix ? `${safe}_${suffix}_${date}` : `${safe}_${date}`
+}
+
+function handleExportSTLAll() {
+  if (!scene.value) {
+    showToast('场景未初始化')
+    return
+  }
+  const filename = getSTLFilename()
+  const result = scene.value.exportAllSTL(filename)
+  if (result) {
+    showToast('STL 模型已导出（整体）')
+    addHistory('导出STL(整体)', 'export-stl')
+  } else {
+    showToast('导出失败，请检查模型')
+  }
+}
+
+function handleExportSTLSeparate() {
+  if (!scene.value) {
+    showToast('场景未初始化')
+    return
+  }
+  const baseName = getSTLFilename()
+  const result = scene.value.exportComponentsSeparate(baseName)
+  if (result) {
+    showToast('STL 模型已导出（分构件）')
+    addHistory('导出STL(分构件)', 'export-stl')
+  } else {
+    showToast('导出失败，请检查模型')
+  }
 }
 
 let explodeDebounceTimer = null

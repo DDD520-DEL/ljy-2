@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from './OrbitControls.js'
 import { COMPONENT_COLORS } from '../models/jointTypes.js'
 import { generateJoint } from '../models/jointGeometry.js'
+import { geometryToSTL, mergeGeometriesWithTransform, downloadSTL } from './stlExporter.js'
 
 export class SceneManager {
   constructor(container) {
@@ -264,6 +265,81 @@ export class SceneManager {
     this.camera.position.copy(center).add(dir.multiplyScalar(dist))
     this.camera.lookAt(center)
     this.controls.spherical.setFromVector3(this.camera.position.clone().sub(center))
+  }
+
+  exportAllSTL(filename = 'mortise_tenon') {
+    if (this.componentMeshes.length === 0) {
+      console.warn('没有可导出的几何体')
+      return false
+    }
+
+    const geometries = []
+    const transforms = []
+
+    for (const g of this.componentMeshes) {
+      const mesh = g.children.find(c => c.isMesh)
+      if (mesh && mesh.geometry) {
+        g.updateMatrixWorld(true)
+        geometries.push(mesh.geometry)
+        transforms.push(g.matrixWorld.clone())
+      }
+    }
+
+    if (geometries.length === 0) {
+      console.warn('没有可导出的几何体')
+      return false
+    }
+
+    const merged = mergeGeometriesWithTransform(geometries, transforms)
+    const buffer = geometryToSTL(merged, filename)
+    downloadSTL(buffer, filename)
+    return true
+  }
+
+  exportComponentSTL(componentId, filename) {
+    const group = this.componentMeshes.find(g => g.userData.id === componentId)
+    if (!group) {
+      console.warn('未找到构件:', componentId)
+      return false
+    }
+
+    const mesh = group.children.find(c => c.isMesh)
+    if (!mesh || !mesh.geometry) {
+      console.warn('构件没有几何体:', componentId)
+      return false
+    }
+
+    group.updateMatrixWorld(true)
+    const geo = mesh.geometry.clone()
+    geo.applyMatrix4(group.matrixWorld)
+
+    const name = filename || group.userData.name || componentId
+    const buffer = geometryToSTL(geo, name)
+    downloadSTL(buffer, name)
+    return true
+  }
+
+  exportComponentsSeparate(baseFilename = 'mortise_tenon') {
+    if (this.componentMeshes.length === 0) {
+      console.warn('没有可导出的几何体')
+      return false
+    }
+
+    let count = 0
+    for (const g of this.componentMeshes) {
+      const name = g.userData.name || g.userData.id || `component_${count + 1}`
+      const safeName = name.replace(/[\\/:*?"<>|]/g, '_')
+      const result = this.exportComponentSTL(g.userData.id, `${baseFilename}_${safeName}`)
+      if (result) count++
+    }
+    return count > 0
+  }
+
+  getComponentMeshes() {
+    return this.componentMeshes.map(g => ({
+      id: g.userData.id,
+      name: g.userData.name
+    }))
   }
 
   _animate = () => {

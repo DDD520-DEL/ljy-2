@@ -306,6 +306,33 @@
       >
         📋 导出物料清单 (BOM)
       </button>
+
+      <div class="pt-3 border-t border-wood-dark/30">
+        <div class="text-xs text-wood-light/70 mb-2 tracking-wider">3D 模型导出 (STL)</div>
+        <div class="flex gap-2">
+          <button
+            @click="showSTLMenu = !showSTLMenu"
+            class="flex-1 px-3 py-2 text-xs bg-wood/20 text-wood rounded border border-wood/50 hover:bg-wood/30 transition-all tracking-wider font-bold flex items-center justify-center gap-1"
+          >
+            🖨 导出 STL
+            <span class="text-[10px]">▼</span>
+          </button>
+        </div>
+        <div v-if="showSTLMenu" class="mt-2 space-y-1.5 bg-wood-dark/20 rounded border border-wood-dark/40 p-2">
+          <button
+            @click="handleExportSTLAll"
+            class="w-full px-3 py-2 text-xs bg-wood/70 text-white rounded border border-wood-light hover:bg-wood transition-all text-left tracking-wider"
+          >
+            📦 整体导出（合并为一个文件）
+          </button>
+          <button
+            @click="handleExportSTLSeparate"
+            class="w-full px-3 py-2 text-xs bg-wood-dark/50 text-wood-light rounded border border-wood-dark/60 hover:bg-wood-dark/70 transition-all text-left tracking-wider"
+          >
+            🧩 分构件导出（每个构件单独文件）
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="saveDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
@@ -447,6 +474,8 @@ const emit = defineEmits([
   'toggle-wireframe',
   'toggle-annotations',
   'export-bom',
+  'export-stl-all',
+  'export-stl-separate',
   'save-project',
   'load-project',
   'delete-project',
@@ -474,6 +503,7 @@ const uploadDialogOpen = ref(false)
 const uploadTarget = ref(null)
 const uploadError = ref('')
 const uploading = ref(false)
+const showSTLMenu = ref(false)
 
 const jointTypesList = computed(() => Object.values(JOINT_TYPES))
 const currentJointType = computed(() => JOINT_TYPES[props.currentType])
@@ -593,5 +623,15 @@ function handleDownload(project) {
 
 function handleRefreshCloud() {
   emit('refresh-cloud')
+}
+
+function handleExportSTLAll() {
+  showSTLMenu.value = false
+  emit('export-stl-all')
+}
+
+function handleExportSTLSeparate() {
+  showSTLMenu.value = false
+  emit('export-stl-separate')
 }
 </script>
