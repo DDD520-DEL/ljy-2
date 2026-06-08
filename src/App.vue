@@ -1,87 +1,141 @@
 <template>
   <div class="w-full h-full flex bg-ink text-white">
-    <div class="hidden md:block w-80 lg:w-96 flex-shrink-0 z-10 shadow-2xl">
-      <ControlPanel
-        :current-type="currentType"
-        :params="currentParams"
-        :explode-progress="explodeProgress"
-        :wireframe-mode="wireframeMode"
-        :show-annotations="showAnnotations"
-        :projects="projects"
-        :current-project-id="currentProjectId"
-        @select-type="selectType"
-        @param-change="updateParam"
-        @explode-change="setExplode"
-        @toggle-explode="toggleExplode"
-        @animate-explode="animateExplode"
-        @toggle-wireframe="wireframeMode = !wireframeMode"
-        @toggle-annotations="toggleAnnotations"
-        @export-bom="showBom = true"
-        @save-project="handleSaveProject"
-        @load-project="handleLoadProject"
-        @delete-project="handleDeleteProject"
-        @rename-project="handleRenameProject"
-        @refresh-projects="refreshProjects"
-      />
-    </div>
-
-    <div ref="canvasContainer" class="flex-1 relative">
-      <div class="absolute top-4 left-4 z-20 bg-ink/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-wood/30">
-        <div class="text-wood text-sm font-bold tracking-widest">{{ currentJointInfo.name }}</div>
-        <div class="text-wood-light/60 text-xs mt-0.5">{{ currentJointInfo.description }}</div>
+    <template v-if="viewMode === 'single'">
+      <div class="hidden md:block w-80 lg:w-96 flex-shrink-0 z-10 shadow-2xl">
+        <ControlPanel
+          :current-type="currentType"
+          :params="currentParams"
+          :explode-progress="explodeProgress"
+          :wireframe-mode="wireframeMode"
+          :show-annotations="showAnnotations"
+          :projects="projects"
+          :current-project-id="currentProjectId"
+          @select-type="selectType"
+          @param-change="updateParam"
+          @explode-change="setExplode"
+          @toggle-explode="toggleExplode"
+          @animate-explode="animateExplode"
+          @toggle-wireframe="wireframeMode = !wireframeMode"
+          @toggle-annotations="toggleAnnotations"
+          @export-bom="showBom = true"
+          @save-project="handleSaveProject"
+          @load-project="handleLoadProject"
+          @delete-project="handleDeleteProject"
+          @rename-project="handleRenameProject"
+          @refresh-projects="refreshProjects"
+        />
       </div>
 
-      <div class="absolute bottom-4 left-4 z-20 bg-ink/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-wood/30 text-[11px] text-wood-light/70 leading-relaxed">
-        <div>🖱️ 拖动旋转 · 滚轮/双指缩放</div>
-        <div>📱 单指旋转 · 双指捏合缩放</div>
-      </div>
+      <div ref="canvasContainer" class="flex-1 relative">
+        <div class="absolute top-4 left-4 z-20 bg-ink/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-wood/30">
+          <div class="text-wood text-sm font-bold tracking-widest">{{ currentJointInfo.name }}</div>
+          <div class="text-wood-light/60 text-xs mt-0.5">{{ currentJointInfo.description }}</div>
+        </div>
 
-      <button
-        class="absolute bottom-4 right-4 z-20 bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
-        @click="historyPanelOpen = true"
-      >
-        <span>📜</span>
-        <span class="tracking-wider font-bold">历史记录</span>
-        <span v-if="historyList.length > 1" class="bg-wood text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-          {{ historyList.length }}
-        </span>
-      </button>
+        <div class="absolute top-4 right-4 z-20 flex gap-2">
+          <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden">
+            <button
+              @click="viewMode = 'single'"
+              class="px-3 py-2 text-xs font-bold tracking-wider bg-wood text-white"
+            >
+              单视图
+            </button>
+            <button
+              @click="viewMode = 'compare'"
+              class="px-3 py-2 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all"
+            >
+              ⇄ 对比
+            </button>
+          </div>
+        </div>
 
-      <button
-        class="absolute top-4 right-4 z-20 md:hidden bg-ink/80 backdrop-blur-sm px-3 py-2 rounded border border-wood/30 text-wood text-sm"
-        @click="mobilePanelOpen = !mobilePanelOpen"
-      >
-        ⚙ 参数
-      </button>
+        <div class="absolute bottom-4 left-4 z-20 bg-ink/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-wood/30 text-[11px] text-wood-light/70 leading-relaxed">
+          <div>🖱️ 拖动旋转 · 滚轮/双指缩放</div>
+          <div>📱 单指旋转 · 双指捏合缩放</div>
+        </div>
 
-      <div v-if="mobilePanelOpen" class="absolute inset-0 z-30 md:hidden">
-        <div class="absolute inset-0 bg-black/50" @click="mobilePanelOpen = false"></div>
-        <div class="absolute right-0 top-0 bottom-0 w-80">
-          <ControlPanel
-            :current-type="currentType"
-            :params="currentParams"
-            :explode-progress="explodeProgress"
-            :wireframe-mode="wireframeMode"
-            :show-annotations="showAnnotations"
-            :projects="projects"
-            :current-project-id="currentProjectId"
-            @select-type="v => { selectType(v); mobilePanelOpen = false }"
-            @param-change="updateParam"
-            @explode-change="setExplode"
-            @toggle-explode="toggleExplode"
-            @animate-explode="animateExplode"
-            @toggle-wireframe="wireframeMode = !wireframeMode"
-            @toggle-annotations="toggleAnnotations"
-            @export-bom="showBom = true; mobilePanelOpen = false"
-            @save-project="handleSaveProject"
-            @load-project="id => { handleLoadProject(id); mobilePanelOpen = false }"
-            @delete-project="handleDeleteProject"
-            @rename-project="handleRenameProject"
-            @refresh-projects="refreshProjects"
-          />
+        <button
+          class="absolute bottom-4 right-4 z-20 bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+          @click="historyPanelOpen = true"
+        >
+          <span>📜</span>
+          <span class="tracking-wider font-bold">历史记录</span>
+          <span v-if="historyList.length > 1" class="bg-wood text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+            {{ historyList.length }}
+          </span>
+        </button>
+
+        <button
+          class="absolute top-4 right-4 z-20 md:hidden bg-ink/80 backdrop-blur-sm px-3 py-2 rounded border border-wood/30 text-wood text-sm mt-10"
+          @click="mobilePanelOpen = !mobilePanelOpen"
+        >
+          ⚙ 参数
+        </button>
+
+        <div v-if="mobilePanelOpen" class="absolute inset-0 z-30 md:hidden">
+          <div class="absolute inset-0 bg-black/50" @click="mobilePanelOpen = false"></div>
+          <div class="absolute right-0 top-0 bottom-0 w-80">
+            <ControlPanel
+              :current-type="currentType"
+              :params="currentParams"
+              :explode-progress="explodeProgress"
+              :wireframe-mode="wireframeMode"
+              :show-annotations="showAnnotations"
+              :projects="projects"
+              :current-project-id="currentProjectId"
+              @select-type="v => { selectType(v); mobilePanelOpen = false }"
+              @param-change="updateParam"
+              @explode-change="setExplode"
+              @toggle-explode="toggleExplode"
+              @animate-explode="animateExplode"
+              @toggle-wireframe="wireframeMode = !wireframeMode"
+              @toggle-annotations="toggleAnnotations"
+              @export-bom="showBom = true; mobilePanelOpen = false"
+              @save-project="handleSaveProject"
+              @load-project="id => { handleLoadProject(id); mobilePanelOpen = false }"
+              @delete-project="handleDeleteProject"
+              @rename-project="handleRenameProject"
+              @refresh-projects="refreshProjects"
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </template>
+
+    <template v-else>
+      <div class="w-full h-full flex flex-col">
+        <div class="px-4 py-2 border-b border-wood-dark/40 bg-ink/90 backdrop-blur-sm flex items-center justify-between flex-shrink-0">
+          <div class="text-wood text-sm font-bold tracking-widest">
+            ⇄ 并排对比模式
+          </div>
+          <div class="flex gap-2">
+            <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden">
+              <button
+                @click="viewMode = 'single'"
+                class="px-3 py-1.5 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all"
+              >
+                单视图
+              </button>
+              <button
+                @click="viewMode = 'compare'"
+                class="px-3 py-1.5 text-xs font-bold tracking-wider bg-wood text-white"
+              >
+                ⇄ 对比
+              </button>
+            </div>
+            <button
+              @click="viewMode = 'single'"
+              class="px-3 py-1.5 text-xs bg-wood-dark/50 text-wood-light rounded border border-wood-dark/50 hover:bg-wood-dark/70 transition-all"
+            >
+              ✕ 退出对比
+            </button>
+          </div>
+        </div>
+        <div class="flex-1 min-h-0">
+          <CompareView v-if="viewMode === 'compare'" @exit-compare="viewMode = 'single'" />
+        </div>
+      </div>
+    </template>
 
     <BomDialog
       v-if="showBom"
@@ -116,7 +170,9 @@ import {
 import ControlPanel from './components/ControlPanel.vue'
 import BomDialog from './components/BomDialog.vue'
 import HistoryPanel from './components/HistoryPanel.vue'
+import CompareView from './components/CompareView.vue'
 
+const viewMode = ref('single')
 const canvasContainer = ref(null)
 const scene = ref(null)
 const currentType = ref('straight')
