@@ -310,8 +310,33 @@ export class SceneManager {
     }
 
     group.updateMatrixWorld(true)
+
     const geo = mesh.geometry.clone()
-    geo.applyMatrix4(group.matrixWorld)
+
+    if (!geo.getAttribute('normal')) {
+      geo.computeVertexNormals()
+    }
+
+    const normalMatrix = new THREE.Matrix3().getNormalMatrix(group.matrixWorld)
+    const posAttr = geo.getAttribute('position')
+    const normAttr = geo.getAttribute('normal')
+    const tmpPos = new THREE.Vector3()
+    const tmpNorm = new THREE.Vector3()
+
+    for (let i = 0; i < posAttr.count; i++) {
+      tmpPos.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i))
+      tmpPos.applyMatrix4(group.matrixWorld)
+      posAttr.setXYZ(i, tmpPos.x, tmpPos.y, tmpPos.z)
+
+      tmpNorm.set(normAttr.getX(i), normAttr.getY(i), normAttr.getZ(i))
+      tmpNorm.applyMatrix3(normalMatrix).normalize()
+      normAttr.setXYZ(i, tmpNorm.x, tmpNorm.y, tmpNorm.z)
+    }
+
+    posAttr.needsUpdate = true
+    normAttr.needsUpdate = true
+    geo.computeBoundingBox()
+    geo.computeBoundingSphere()
 
     const name = filename || group.userData.name || componentId
     const buffer = geometryToSTL(geo, name)

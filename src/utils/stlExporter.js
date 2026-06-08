@@ -89,17 +89,35 @@ export function mergeGeometriesWithTransform(geometries, transforms) {
   const mergedIndices = []
   let vertexOffset = 0
 
+  const tmpA = new THREE.Vector3()
+  const tmpB = new THREE.Vector3()
+  const tmpC = new THREE.Vector3()
+  const tmpAT = new THREE.Vector3()
+  const tmpBT = new THREE.Vector3()
+  const tmpCT = new THREE.Vector3()
+  const tmpPos = new THREE.Vector3()
+  const tmpNorm = new THREE.Vector3()
+  const faceNormal = new THREE.Vector3()
+  const ab = new THREE.Vector3()
+  const ac = new THREE.Vector3()
+
   for (let g = 0; g < geometries.length; g++) {
     const geo = geometries[g]
     const transform = transforms[g] || new THREE.Matrix4()
 
+    const normalMatrix = new THREE.Matrix3().getNormalMatrix(transform)
+
     const posAttr = geo.getAttribute('position')
-    const normAttr = geo.getAttribute('normal')
+    let normAttr = geo.getAttribute('normal')
     const indexAttr = geo.getIndex()
 
-    const normalMatrix = new THREE.Matrix3().getNormalMatrix(transform)
-    const tmpPos = new THREE.Vector3()
-    const tmpNorm = new THREE.Vector3()
+    let computedNormals = null
+    if (!normAttr) {
+      const geoCopy = geo.clone()
+      geoCopy.computeVertexNormals()
+      computedNormals = geoCopy.getAttribute('normal')
+    }
+    const effectiveNormAttr = normAttr || computedNormals
 
     const triCount = indexAttr ? indexAttr.count / 3 : posAttr.count / 3
 
@@ -115,19 +133,43 @@ export function mergeGeometriesWithTransform(geometries, transforms) {
         iC = tri * 3 + 2
       }
 
-      for (const idx of [iA, iB, iC]) {
-        tmpPos.set(posAttr.getX(idx), posAttr.getY(idx), posAttr.getZ(idx))
-        tmpPos.applyMatrix4(transform)
-        mergedPositions.push(tmpPos.x, tmpPos.y, tmpPos.z)
+      tmpA.set(posAttr.getX(iA), posAttr.getY(iA), posAttr.getZ(iA))
+      tmpB.set(posAttr.getX(iB), posAttr.getY(iB), posAttr.getZ(iB))
+      tmpC.set(posAttr.getX(iC), posAttr.getY(iC), posAttr.getZ(iC))
 
-        if (normAttr) {
-          tmpNorm.set(normAttr.getX(idx), normAttr.getY(idx), normAttr.getZ(idx))
-          tmpNorm.applyMatrix3(normalMatrix).normalize()
+      tmpAT.copy(tmpA).applyMatrix4(transform)
+      tmpBT.copy(tmpB).applyMatrix4(transform)
+      tmpCT.copy(tmpC).applyMatrix4(transform)
+
+      ab.subVectors(tmpBT, tmpAT)
+      ac.subVectors(tmpCT, tmpAT)
+      faceNormal.crossVectors(ab, ac).normalize()
+
+      for (const [j, idx] of [iA, iB, iC].entries()) {
+        if (j === 0) {
+          mergedPositions.push(tmpAT.x, tmpAT.y, tmpAT.z)
+        } else if (j === 1) {
+          mergedPositions.push(tmpBT.x, tmpBT.y, tmpBT.z)
         } else {
-          tmpNorm.set(0, 0, 1)
+          mergedPositions.push(tmpCT.x, tmpCT.y, tmpCT.z)
         }
-        mergedNormals.push(tmpNorm.x, tmpNorm.y, tmpNorm.z)
 
+        if (effectiveNormAttr) {
+          tmpNorm.set(
+            effectiveNormAttr.getX(idx),
+            effectiveNormAttr.getY(idx),
+            effectiveNormAttr.getZ(idx)
+          )
+          tmpNorm.applyMatrix3(normalMatrix).normalize()
+
+          if (tmpNorm.dot(faceNormal) < 0) {
+            tmpNorm.negate()
+          }
+        } else {
+          tmpNorm.copy(faceNormal)
+        }
+
+        mergedNormals.push(tmpNorm.x, tmpNorm.y, tmpNorm.z)
         mergedIndices.push(vertexOffset++)
       }
     }
