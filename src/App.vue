@@ -37,6 +37,17 @@
       </div>
 
       <button
+        class="absolute bottom-4 right-4 z-20 bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+        @click="historyPanelOpen = true"
+      >
+        <span>📜</span>
+        <span class="tracking-wider font-bold">历史记录</span>
+        <span v-if="historyList.length > 1" class="bg-wood text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+          {{ historyList.length }}
+        </span>
+      </button>
+
+      <button
         class="absolute top-4 right-4 z-20 md:hidden bg-ink/80 backdrop-blur-sm px-3 py-2 rounded border border-wood/30 text-wood text-sm"
         @click="mobilePanelOpen = !mobilePanelOpen"
       >
@@ -78,6 +89,16 @@
       :joint-name="currentJointInfo.name"
       @close="showBom = false"
     />
+
+    <HistoryPanel
+      :open="historyPanelOpen"
+      :history="historyList"
+      :current-index="historyIndex"
+      @close="historyPanelOpen = false"
+      @undo="undoHistory"
+      @reset-default="resetToDefault"
+      @goto="gotoHistory"
+    />
   </div>
 </template>
 
@@ -94,6 +115,7 @@ import {
 } from './utils/projectManager.js'
 import ControlPanel from './components/ControlPanel.vue'
 import BomDialog from './components/BomDialog.vue'
+import HistoryPanel from './components/HistoryPanel.vue'
 
 const canvasContainer = ref(null)
 const scene = ref(null)
@@ -106,6 +128,10 @@ const mobilePanelOpen = ref(false)
 const animating = ref(false)
 const projects = ref([])
 const currentProjectId = ref(null)
+const historyPanelOpen = ref(false)
+const historyList = ref([])
+const historyIndex = ref(-1)
+const isRestoringHistory = ref(false)
 
 const defaultParams = computed(() => {
   const ps = {}
@@ -129,20 +155,105 @@ const bomComponents = computed(() => {
   }))
 })
 
+function getStateSnapshot() {
+  return {
+    type: currentType.value,
+    params: { ...currentParams },
+    explodeProgress: explodeProgress.value,
+    wireframeMode: wireframeMode.value,
+    showAnnotations: showAnnotations.value
+  }
+}
+
+function addHistory(label, type, detail = '') {
+  if (isRestoringHistory.value) return
+  const snapshot = getStateSnapshot()
+  const newItem = {
+    id: Date.now() + Math.random(),
+    label,
+    type,
+    detail,
+    timestamp: Date.now(),
+    state: snapshot
+  }
+  if (historyIndex.value < historyList.value.length - 1) {
+    historyList.value = historyList.value.slice(0, historyIndex.value + 1)
+  }
+  historyList.value.push(newItem)
+  historyIndex.value = historyList.value.length - 1
+}
+
+function restoreState(state) {
+  isRestoringHistory.value = true
+  try {
+    if (state.type) {
+      currentType.value = state.type
+    }
+    if (state.params) {
+      Object.assign(currentParams, state.params)
+    }
+    if (typeof state.explodeProgress === 'number') {
+      explodeProgress.value = state.explodeProgress
+    }
+    if (typeof state.wireframeMode === 'boolean') {
+      wireframeMode.value = state.wireframeMode
+    }
+    if (typeof state.showAnnotations === 'boolean') {
+      showAnnotations.value = state.showAnnotations
+    }
+    loadJoint()
+  } finally {
+    setTimeout(() => {
+      isRestoringHistory.value = false
+    }, 0)
+  }
+}
+
+function gotoHistory(index) {
+  if (index < 0 || index >= historyList.value.length) return
+  const item = historyList.value[index]
+  if (item && item.state) {
+    historyIndex.value = index
+    restoreState(item.state)
+  }
+}
+
+function undoHistory() {
+  if (historyIndex.value > 0) {
+    gotoHistory(historyIndex.value - 1)
+  }
+}
+
+function resetToDefault() {
+  if (historyList.value.length > 0 && historyList.value[0]) {
+    historyIndex.value = 0
+    restoreState(historyList.value[0].state)
+  }
+}
+
 function selectType(type) {
+  const oldType = currentType.value
   currentType.value = type
   Object.assign(currentParams, defaultParams.value)
   loadJoint()
+  const typeName = JOINT_TYPES[type]?.name || type
+  addHistory(`切换为「${typeName}」`, 'select-type', `从「${JOINT_TYPES[oldType]?.name || oldType}」切换`)
 }
 
 function updateParam(key, value) {
   currentParams[key] = value
   loadJoint()
+  const paramDef = JOINT_TYPES[currentType.value]?.params?.find(p => p.key === key)
+  const paramName = paramDef?.name || key
+  const unit = paramDef?.unit || ''
+  const formattedVal = Number.isInteger(value) ? value : value.toFixed(2)
+  addHistory(`调整 ${paramName}`, 'param-change', `${formattedVal}${unit}`)
 }
 
 function setExplode(v) {
   explodeProgress.value = v
   if (scene.value) scene.value.setExplode(v)
+  debouncedAddExplodeHistory(v)
 }
 
 function toggleExplode() {
@@ -173,6 +284,7 @@ function animateTo(target) {
       requestAnimationFrame(step)
     } else {
       animating.value = false
+      addHistory(`调整拆解进度`, 'explode-change', `${Math.round(target * 100)}%`)
     }
   }
   requestAnimationFrame(step)
@@ -181,6 +293,15 @@ function animateTo(target) {
 function toggleAnnotations() {
   showAnnotations.value = !showAnnotations.value
   if (scene.value) scene.value.setShowAnnotations(showAnnotations.value)
+  addHistory(showAnnotations.value ? '显示标注' : '隐藏标注', 'toggle-annotations')
+}
+
+let explodeDebounceTimer = null
+function debouncedAddExplodeHistory(v) {
+  if (explodeDebounceTimer) clearTimeout(explodeDebounceTimer)
+  explodeDebounceTimer = setTimeout(() => {
+    addHistory(`调整拆解进度`, 'explode-change', `${Math.round(v * 100)}%`)
+  }, 300)
 }
 
 function loadJoint() {
@@ -236,6 +357,7 @@ function handleLoadProject(id) {
   }
   currentProjectId.value = project.id
   loadJoint()
+  addHistory(`加载项目「${project.name}」`, 'load-project')
 }
 
 function handleDeleteProject(id, onSuccess) {
@@ -260,6 +382,9 @@ function handleRenameProject(id, newName, onSuccess, onError) {
 
 watch(wireframeMode, v => {
   if (scene.value) scene.value.setWireframe(v)
+  if (!isRestoringHistory.value) {
+    addHistory(v ? '切换为线框模式' : '切换为实体模式', 'toggle-wireframe')
+  }
 })
 
 watch(showAnnotations, v => {
@@ -273,5 +398,17 @@ onMounted(async () => {
     scene.value = new SceneManager(canvasContainer.value)
     loadJoint()
   }
+  nextTick(() => {
+    const initItem = {
+      id: Date.now(),
+      label: '初始默认状态',
+      type: 'init',
+      detail: '刚打开时的默认状态',
+      timestamp: Date.now(),
+      state: getStateSnapshot()
+    }
+    historyList.value = [initItem]
+    historyIndex.value = 0
+  })
 })
 </script>
