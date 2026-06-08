@@ -11,12 +11,15 @@ if (!fs.existsSync(dataDir)) {
 }
 
 const dbFile = path.join(dataDir, 'db.json')
-const defaultData = { users: [], projects: [] }
+const defaultData = { users: [], projects: [], shares: [] }
 
 const adapter = new JSONFile(dbFile)
 const db = new Low(adapter, defaultData)
 
 await db.read()
+if (!db.data.users) db.data.users = []
+if (!db.data.projects) db.data.projects = []
+if (!db.data.shares) db.data.shares = []
 await db.write()
 
 export default db

@@ -96,5 +96,16 @@ export const api = {
     return request('/projects/' + id, {
       method: 'DELETE'
     })
+  },
+
+  async createShare(shareData) {
+    return request('/shares', {
+      method: 'POST',
+      body: JSON.stringify(shareData)
+    })
+  },
+
+  async getShare(id) {
+    return request('/shares/' + id)
   }
 }

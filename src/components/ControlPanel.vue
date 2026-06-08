@@ -360,6 +360,14 @@
       </div>
 
       <button
+        @click="$emit('open-share')"
+        class="w-full px-3 py-2.5 text-sm bg-gradient-to-r from-wood to-wood-dark text-white rounded border border-wood-light hover:from-wood-dark hover:to-wood transition-all tracking-widest font-bold shadow-lg flex items-center justify-center gap-2"
+      >
+        <span>🔗</span>
+        <span>分享模型</span>
+      </button>
+
+      <button
         @click="$emit('export-bom')"
         class="w-full px-3 py-2.5 text-sm bg-wood text-white rounded border border-wood-light hover:bg-wood-dark transition-all tracking-widest font-bold shadow-lg"
       >
@@ -550,7 +558,8 @@ const emit = defineEmits([
   'start-recording',
   'stop-recording',
   'export-animation-gif',
-  'export-animation-video'
+  'export-animation-video',
+  'open-share'
 ])
 
 const showExportMenu = ref(false)

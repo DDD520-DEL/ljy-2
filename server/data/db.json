@@ -149,5 +149,75 @@
       "created_at": 1780921991047,
       "updated_at": 1780921991047
     }
+  ],
+  "shares": [
+    {
+      "id": "G8ORxGaenf",
+      "type": "straight",
+      "params": {
+        "sectionW": 60,
+        "sectionH": 80,
+        "tenonLength": 35,
+        "tenonWidthRatio": 0.6,
+        "tenonHeightRatio": 0.5,
+        "shoulderRatio": 0.2
+      },
+      "viewState": {
+        "type": "straight",
+        "params": {
+          "sectionW": 60,
+          "sectionH": 80,
+          "tenonLength": 35,
+          "tenonWidthRatio": 0.6,
+          "tenonHeightRatio": 0.5,
+          "shoulderRatio": 0.2
+        },
+        "explodeProgress": 0,
+        "wireframeMode": true,
+        "showAnnotations": true
+      },
+      "thumbnail": null,
+      "encodedData": "eyJ2IjoxLCJ0Ijoic3RyYWlnaHQiLCJwIjp7InNlY3Rpb25XIjo2MCwic2VjdGlvbkgiOjgwLCJ0ZW5vbkxlbmd0aCI6MzUsInRlbm9uV2lkdGhSYXRpbyI6MC42LCJ0ZW5vbkhlaWdodFJhdGlvIjowLjUsInNob3VsZGVyUmF0aW8iOjAuMn0sInZzIjp7ImV4cGxvZGUiOjAsIndpcmVmcmFtZSI6dHJ1ZSwiYW5ub3QiOnRydWV9fQ%3D%3D",
+      "created_at": 1780936777823,
+      "view_count": 1,
+      "user_id": null
+    },
+    {
+      "id": "LAaVk5GPN9",
+      "type": "dovetail",
+      "params": {
+        "sectionW": 80,
+        "sectionH": 20,
+        "tenonLength": 25,
+        "tenonWidthRatio": 0.6,
+        "tenonHeightRatio": 0.5,
+        "shoulderRatio": 0.2,
+        "tailAngle": 9,
+        "tailCount": 2,
+        "pinRatio": 0.6
+      },
+      "viewState": {
+        "type": "dovetail",
+        "params": {
+          "sectionW": 80,
+          "sectionH": 20,
+          "tenonLength": 25,
+          "tenonWidthRatio": 0.6,
+          "tenonHeightRatio": 0.5,
+          "shoulderRatio": 0.2,
+          "tailAngle": 9,
+          "tailCount": 2,
+          "pinRatio": 0.6
+        },
+        "explodeProgress": 0,
+        "wireframeMode": true,
+        "showAnnotations": true
+      },
+      "thumbnail": null,
+      "encodedData": "eyJ2IjoxLCJ0IjoiZG92ZXRhaWwiLCJwIjp7InNlY3Rpb25XIjo4MCwic2VjdGlvbkgiOjIwLCJ0ZW5vbkxlbmd0aCI6MjUsInRlbm9uV2lkdGhSYXRpbyI6MC42LCJ0ZW5vbkhlaWdodFJhdGlvIjowLjUsInNob3VsZGVyUmF0aW8iOjAuMiwidGFpbEFuZ2xlIjo5LCJ0YWlsQ291bnQiOjIsInBpblJhdGlvIjowLjZ9LCJ2cyI6eyJleHBsb2RlIjowLCJ3aXJlZnJhbWUiOnRydWUsImFubm90Ijp0cnVlfX0%3D",
+      "created_at": 1780937626987,
+      "view_count": 1,
+      "user_id": null
+    }
   ]
 }

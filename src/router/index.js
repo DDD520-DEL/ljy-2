@@ -5,6 +5,7 @@ import Register from '../views/Register.vue'
 
 const routes = [
   { path: '/', component: Editor, meta: { requiresAuth: false } },
+  { path: '/share/:shareId', component: Editor, meta: { requiresAuth: false } },
   { path: '/login', component: Login },
   { path: '/register', component: Register }
 ]

@@ -39,6 +39,7 @@
           @stop-recording="handleStopRecording"
           @export-animation-gif="handleExportGIF"
           @export-animation-video="handleExportVideo"
+          @open-share="handleOpenShare"
         />
       </div>
 
@@ -139,6 +140,7 @@
               @stop-recording="handleStopRecording"
               @export-animation-gif="handleExportGIF"
               @export-animation-video="handleExportVideo"
+              @open-share="handleOpenShare"
             />
           </div>
         </div>
@@ -198,6 +200,15 @@
       @goto="gotoHistory"
     />
 
+    <ShareDialog
+      :open="shareDialogOpen"
+      :type="currentType"
+      :params="currentParams"
+      :view-state="getStateSnapshot()"
+      :thumbnail="shareThumbnail"
+      @close="shareDialogOpen = false"
+    />
+
     <div v-if="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-ink border border-wood/50 text-wood-light px-5 py-2.5 rounded-lg shadow-2xl text-sm tracking-wider">
       {{ toast }}
     </div>
@@ -206,7 +217,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, reactive, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { SceneManager } from '../utils/SceneManager.js'
 import { JOINT_TYPES, INGFA_NAMES } from '../models/jointTypes.js'
 import {
@@ -218,12 +229,15 @@ import {
 } from '../utils/projectManager.js'
 import { api } from '../utils/api.js'
 import { useAuth } from '../stores/auth.js'
+import { decodeShareData } from '../utils/shareUtils.js'
 import ControlPanel from '../components/ControlPanel.vue'
 import BomDialog from '../components/BomDialog.vue'
 import HistoryPanel from '../components/HistoryPanel.vue'
 import CompareView from '../components/CompareView.vue'
+import ShareDialog from '../components/ShareDialog.vue'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuth()
 
 const viewMode = ref('single')
@@ -248,6 +262,10 @@ const toast = ref('')
 const isRecording = ref(false)
 const recordingInfo = ref({ frameCount: 0, duration: 0 })
 const _recordingUpdateInterval = ref(null)
+const shareDialogOpen = ref(false)
+const shareThumbnail = ref('')
+const shareLoading = ref(false)
+const isSharedView = ref(false)
 
 const defaultParams = computed(() => {
   const ps = {}
@@ -777,6 +795,89 @@ async function initAuth() {
   }
 }
 
+async function handleOpenShare() {
+  if (!scene.value) {
+    showToast('场景未初始化')
+    return
+  }
+  shareLoading.value = true
+  shareThumbnail.value = ''
+  try {
+    await nextTick()
+    try {
+      const thumb = scene.value.captureThumbnail(800, 600, 'image/jpeg', 0.85)
+      if (thumb && thumb.dataUrl) {
+        shareThumbnail.value = thumb.dataUrl
+      }
+    } catch (thumbErr) {
+      console.warn('缩略图生成跳过:', thumbErr.message)
+    }
+    shareDialogOpen.value = true
+  } catch (e) {
+    console.error('打开分享失败:', e)
+    shareDialogOpen.value = true
+  } finally {
+    shareLoading.value = false
+  }
+}
+
+function applyShareData(shareData) {
+  if (!shareData) return
+  isSharedView.value = true
+  if (shareData.type) {
+    currentType.value = shareData.type
+  }
+  if (shareData.params) {
+    Object.assign(currentParams, shareData.params)
+  }
+  const vs = shareData.viewState || {}
+  if (typeof vs.explodeProgress === 'number') {
+    explodeProgress.value = vs.explodeProgress
+  }
+  if (typeof vs.wireframeMode === 'boolean') {
+    wireframeMode.value = vs.wireframeMode
+  }
+  if (typeof vs.showAnnotations === 'boolean') {
+    showAnnotations.value = vs.showAnnotations
+  }
+  loadJoint()
+}
+
+async function loadFromShareId(shareId) {
+  try {
+    showToast('正在加载分享模型...')
+    const data = await api.getShare(shareId)
+    applyShareData(data)
+    showToast(`已加载分享模型：${JOINT_TYPES[data.type]?.name || data.type}`)
+    return true
+  } catch (e) {
+    console.error('加载分享失败:', e)
+    showToast('分享加载失败：' + (e.message || '链接无效'))
+    return false
+  }
+}
+
+function loadFromDirectEncoded(encoded) {
+  const decoded = decodeShareData(encoded)
+  if (decoded) {
+    applyShareData(decoded)
+    showToast(`已加载分享模型：${JOINT_TYPES[decoded.type]?.name || decoded.type}`)
+    return true
+  }
+  showToast('分享链接无效')
+  return false
+}
+
+async function checkShareInUrl() {
+  const shareId = route.params.shareId
+  const directData = route.query.d
+  if (shareId) {
+    await loadFromShareId(shareId)
+  } else if (directData) {
+    loadFromDirectEncoded(directData)
+  }
+}
+
 watch(wireframeMode, v => {
   if (scene.value) scene.value.setWireframe(v)
   if (!isRestoringHistory.value) {
@@ -788,6 +889,14 @@ watch(showAnnotations, v => {
   if (scene.value) scene.value.setShowAnnotations(v)
 })
 
+watch(() => [route.params.shareId, route.query.d], async ([newShareId, newDirectData]) => {
+  if (newShareId) {
+    await loadFromShareId(newShareId)
+  } else if (newDirectData) {
+    loadFromDirectEncoded(newDirectData)
+  }
+}, { immediate: false })
+
 onMounted(async () => {
   await nextTick()
   refreshProjects()
@@ -796,12 +905,14 @@ onMounted(async () => {
     scene.value = new SceneManager(canvasContainer.value)
     loadJoint()
   }
+  await nextTick()
+  await checkShareInUrl()
   nextTick(() => {
     const initItem = {
       id: Date.now(),
-      label: '初始默认状态',
-      type: 'init',
-      detail: '刚打开时的默认状态',
+      label: isSharedView.value ? '分享模型状态' : '初始默认状态',
+      type: isSharedView.value ? 'share' : 'init',
+      detail: isSharedView.value ? '从分享链接加载的模型' : '刚打开时的默认状态',
       timestamp: Date.now(),
       state: getStateSnapshot()
     }

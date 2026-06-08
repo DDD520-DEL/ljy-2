@@ -400,6 +400,39 @@ export class SceneManager {
     return null
   }
 
+  captureThumbnail(maxWidth = 800, maxHeight = 600, type = 'image/jpeg', quality = 0.85) {
+    this.renderer.render(this.scene, this.camera)
+    const canvas = this.renderer.domElement
+    const srcWidth = canvas.width
+    const srcHeight = canvas.height
+
+    const ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight, 1)
+    const dstWidth = Math.floor(srcWidth * ratio)
+    const dstHeight = Math.floor(srcHeight * ratio)
+
+    const offscreen = document.createElement('canvas')
+    offscreen.width = dstWidth
+    offscreen.height = dstHeight
+    const ctx = offscreen.getContext('2d')
+
+    ctx.fillStyle = '#1a0f08'
+    ctx.fillRect(0, 0, dstWidth, dstHeight)
+
+    try {
+      ctx.drawImage(canvas, 0, 0, srcWidth, srcHeight, 0, 0, dstWidth, dstHeight)
+    } catch (e) {
+      console.warn('直接绘制canvas失败，尝试其他方式:', e)
+    }
+
+    const dataUrl = offscreen.toDataURL(type, quality)
+    return {
+      dataUrl,
+      width: dstWidth,
+      height: dstHeight,
+      type
+    }
+  }
+
   _initRecorder() {
     if (this.animationRecorder) return
     const canvas = this.renderer.domElement

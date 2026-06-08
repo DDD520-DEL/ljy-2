@@ -245,6 +245,72 @@ app.delete('/api/projects/:id', authMiddleware, async (req, res) => {
   res.json({ success: true })
 })
 
+function generateShareId() {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let result = ''
+  for (let i = 0; i < 10; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
+app.post('/api/shares', async (req, res) => {
+  const { type, params, viewState, thumbnail, encodedData } = req.body || {}
+  if (!type || !params || typeof params !== 'object') {
+    return res.status(400).json({ error: '分享数据无效' })
+  }
+  const id = generateShareId()
+  const now = Date.now()
+  const share = {
+    id,
+    type,
+    params,
+    viewState: viewState || {},
+    thumbnail: thumbnail || null,
+    encodedData: encodedData || null,
+    created_at: now,
+    view_count: 0,
+    user_id: null
+  }
+  const authHeader = req.headers.authorization
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.slice(7)
+      const decoded = jwt.verify(token, JWT_SECRET)
+      share.user_id = decoded.userId
+    } catch (e) {}
+  }
+  await db.read()
+  db.data.shares.push(share)
+  await db.write()
+  res.json({
+    id: share.id,
+    type: share.type,
+    createdAt: share.created_at
+  })
+})
+
+app.get('/api/shares/:id', async (req, res) => {
+  const { id } = req.params
+  await db.read()
+  const share = db.data.shares.find(s => s.id === id)
+  if (!share) {
+    return res.status(404).json({ error: '分享不存在或已过期' })
+  }
+  share.view_count = (share.view_count || 0) + 1
+  await db.write()
+  res.json({
+    id: share.id,
+    type: share.type,
+    params: share.params,
+    viewState: share.viewState,
+    thumbnail: share.thumbnail,
+    encodedData: share.encodedData,
+    createdAt: share.created_at,
+    viewCount: share.view_count
+  })
+})
+
 app.use((err, req, res, next) => {
   console.error('[服务器错误]', err)
   res.status(500).json({ error: '服务器内部错误' })
