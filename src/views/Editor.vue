@@ -13,6 +13,8 @@
           :user="auth.state.user"
           :cloud-projects="cloudProjects"
           :sync-loading="syncLoading"
+          :is-recording="isRecording"
+          :recording-info="recordingInfo"
           @select-type="selectType"
           @param-change="updateParam"
           @explode-change="setExplode"
@@ -33,6 +35,10 @@
           @download-from-cloud="handleDownloadFromCloud"
           @logout="handleLogout"
           @go-login="goLogin"
+          @start-recording="handleStartRecording"
+          @stop-recording="handleStopRecording"
+          @export-animation-gif="handleExportGIF"
+          @export-animation-video="handleExportVideo"
         />
       </div>
 
@@ -75,6 +81,17 @@
           </span>
         </button>
 
+        <div
+          v-if="isRecording"
+          class="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-red-600/90 backdrop-blur-sm px-5 py-2 rounded-full border border-red-400 text-white text-sm shadow-2xl flex items-center gap-2 animate-pulse"
+        >
+          <span class="w-3 h-3 bg-white rounded-full animate-ping"></span>
+          <span class="font-bold tracking-wider">录制中</span>
+          <span class="text-red-200 text-xs font-mono">
+            {{ recordingInfo.frameCount }} 帧 · {{ recordingInfo.duration.toFixed(1) }}s
+          </span>
+        </div>
+
         <button
           class="absolute top-4 right-4 z-20 md:hidden bg-ink/80 backdrop-blur-sm px-3 py-2 rounded border border-wood/30 text-wood text-sm mt-10"
           @click="mobilePanelOpen = !mobilePanelOpen"
@@ -96,6 +113,8 @@
               :user="auth.state.user"
               :cloud-projects="cloudProjects"
               :sync-loading="syncLoading"
+              :is-recording="isRecording"
+              :recording-info="recordingInfo"
               @select-type="v => { selectType(v); mobilePanelOpen = false }"
               @param-change="updateParam"
               @explode-change="setExplode"
@@ -116,6 +135,10 @@
               @download-from-cloud="handleDownloadFromCloud"
               @logout="handleLogout"
               @go-login="goLogin"
+              @start-recording="handleStartRecording"
+              @stop-recording="handleStopRecording"
+              @export-animation-gif="handleExportGIF"
+              @export-animation-video="handleExportVideo"
             />
           </div>
         </div>
@@ -222,6 +245,9 @@ const isRestoringHistory = ref(false)
 const cloudProjects = ref([])
 const syncLoading = ref(false)
 const toast = ref('')
+const isRecording = ref(false)
+const recordingInfo = ref({ frameCount: 0, duration: 0 })
+const _recordingUpdateInterval = ref(null)
 
 const defaultParams = computed(() => {
   const ps = {}
@@ -433,6 +459,145 @@ function handleExportSTLSeparate() {
     addHistory('导出STL(分构件)', 'export-stl')
   } else {
     showToast('导出失败，请检查模型')
+  }
+}
+
+function getAnimationFilename(suffix = '') {
+  const base = currentProjectName.value || currentJointInfo.value?.name || '榫卯拆解动画'
+  const safe = base.replace(/[\\/:*?"<>|]/g, '_')
+  const date = new Date().toISOString().slice(0, 10)
+  return suffix ? `${safe}_${suffix}_${date}` : `${safe}_${date}`
+}
+
+function updateRecordingInfo() {
+  if (scene.value) {
+    const info = scene.value.getRecordingInfo()
+    if (info) {
+      recordingInfo.value = {
+        frameCount: info.frameCount,
+        duration: info.duration
+      }
+    }
+  }
+}
+
+async function handleStartRecording() {
+  if (!scene.value) {
+    showToast('场景未初始化')
+    return
+  }
+  if (animating.value) {
+    showToast('请等待当前动画完成')
+    return
+  }
+
+  explodeProgress.value = 0
+  if (scene.value) scene.value.setExplode(0)
+
+  const success = scene.value.startAnimationRecording('both')
+  if (success) {
+    isRecording.value = true
+    recordingInfo.value = { frameCount: 0, duration: 0 }
+    showToast('开始录制拆解动画...')
+
+    _recordingUpdateInterval.value = setInterval(updateRecordingInfo, 200)
+
+    setTimeout(() => {
+      animateExplodeWithRecording()
+    }, 500)
+  } else {
+    showToast('启动录制失败')
+  }
+}
+
+async function animateExplodeWithRecording() {
+  animating.value = true
+  const start = 0
+  const end = 1
+  const duration = 2400
+  const t0 = performance.now()
+
+  function step(t) {
+    const k = Math.min(1, (t - t0) / duration)
+    const ease = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2
+    explodeProgress.value = start + (end - start) * ease
+    if (scene.value) scene.value.setExplode(explodeProgress.value)
+    if (k < 1) {
+      requestAnimationFrame(step)
+    } else {
+      setTimeout(() => {
+        const duration2 = 2400
+        const t1 = performance.now()
+        const start2 = 1
+        const end2 = 0
+        function step2(t) {
+          const k = Math.min(1, (t - t1) / duration2)
+          const ease = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2
+          explodeProgress.value = start2 + (end2 - start2) * ease
+          if (scene.value) scene.value.setExplode(explodeProgress.value)
+          if (k < 1) {
+            requestAnimationFrame(step2)
+          } else {
+            animating.value = false
+          }
+        }
+        requestAnimationFrame(step2)
+      }, 300)
+    }
+  }
+  requestAnimationFrame(step)
+}
+
+async function handleStopRecording() {
+  if (!scene.value) {
+    showToast('场景未初始化')
+    return
+  }
+
+  if (_recordingUpdateInterval.value) {
+    clearInterval(_recordingUpdateInterval.value)
+    _recordingUpdateInterval.value = null
+  }
+
+  const info = await scene.value.stopAnimationRecording()
+  isRecording.value = false
+  if (info) {
+    recordingInfo.value = info
+    showToast(`录制完成：${info.frameCount} 帧，${info.duration.toFixed(1)} 秒`)
+  }
+}
+
+async function handleExportGIF() {
+  if (!scene.value) {
+    showToast('场景未初始化')
+    return
+  }
+  try {
+    showToast('正在生成 GIF 动图...')
+    const filename = getAnimationFilename() + '.gif'
+    await scene.value.exportGIF(filename)
+    showToast('GIF 动图已导出')
+    addHistory('导出拆解动画(GIF)', 'export-animation')
+  } catch (e) {
+    console.error(e)
+    showToast('导出失败：' + e.message)
+  }
+}
+
+async function handleExportVideo(format = 'webm') {
+  if (!scene.value) {
+    showToast('场景未初始化')
+    return
+  }
+  try {
+    showToast(`正在生成 ${format.toUpperCase()} 视频...`)
+    const filename = getAnimationFilename() + '.' + format
+    await scene.value.exportVideo(filename, format)
+    showToast(`${format.toUpperCase()} 视频已导出`)
+    addHistory(`导出拆解动画(${format.toUpperCase()})`, 'export-animation')
+  } catch (e) {
+    console.error(e)
+    showToast('导出失败：' + e.message)
   }
 }
 

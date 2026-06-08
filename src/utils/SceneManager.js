@@ -3,6 +3,7 @@ import { OrbitControls } from './OrbitControls.js'
 import { COMPONENT_COLORS } from '../models/jointTypes.js'
 import { generateJoint } from '../models/jointGeometry.js'
 import { geometryToSTL, mergeGeometriesWithTransform, downloadSTL } from './stlExporter.js'
+import { AnimationRecorder } from './animationRecorder.js'
 
 export class SceneManager {
   constructor(container) {
@@ -15,6 +16,9 @@ export class SceneManager {
     this.currentJoint = null
     this.currentParams = null
     this._animId = null
+    this.animationRecorder = null
+    this.isRecording = false
+    this._frameCaptureInterval = null
     this._init()
     this._animate()
   }
@@ -29,7 +33,7 @@ export class SceneManager {
     this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 5000)
     this.camera.position.set(250, 200, 250)
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
     this.renderer.setPixelRatio(window.devicePixelRatio)
     this.renderer.setSize(w, h)
     this.renderer.localClippingEnabled = true
@@ -367,6 +371,125 @@ export class SceneManager {
     }))
   }
 
+  getCanvas() {
+    return this.renderer.domElement
+  }
+
+  captureFrame() {
+    this.renderer.render(this.scene, this.camera)
+    const canvas = this.renderer.domElement
+    const ctx = canvas.getContext('2d') || canvas.getContext('webgl2') || canvas.getContext('webgl')
+    if (ctx && typeof ctx.readPixels === 'function') {
+      const width = canvas.width
+      const height = canvas.height
+      const pixels = new Uint8Array(width * height * 4)
+      ctx.readPixels(0, 0, width, height, ctx.RGBA || 0x1908, ctx.UNSIGNED_BYTE || 0x1401, pixels)
+      const flippedPixels = new Uint8Array(width * height * 4)
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const srcIdx = ((height - 1 - y) * width + x) * 4
+          const dstIdx = (y * width + x) * 4
+          flippedPixels[dstIdx] = pixels[srcIdx]
+          flippedPixels[dstIdx + 1] = pixels[srcIdx + 1]
+          flippedPixels[dstIdx + 2] = pixels[srcIdx + 2]
+          flippedPixels[dstIdx + 3] = pixels[srcIdx + 3]
+        }
+      }
+      return { data: flippedPixels, width, height }
+    }
+    return null
+  }
+
+  _initRecorder() {
+    if (this.animationRecorder) return
+    const canvas = this.renderer.domElement
+    const width = Math.min(canvas.width, 1280)
+    const height = Math.min(canvas.height, 720)
+    this.animationRecorder = new AnimationRecorder(canvas, {
+      fps: 30,
+      width,
+      height
+    })
+  }
+
+  startAnimationRecording(mode = 'both') {
+    if (this.isRecording) return false
+    this._initRecorder()
+
+    this.isRecording = true
+    this.explodeProgress = 0
+    this.setExplode(0)
+
+    if (mode === 'gif' || mode === 'both') {
+      this.animationRecorder.startRecording()
+      this._startFrameCapture()
+    }
+    if (mode === 'video' || mode === 'both') {
+      try {
+        this.animationRecorder.startMediaRecording()
+      } catch (e) {
+        console.warn('视频录制不可用:', e.message)
+      }
+    }
+    return true
+  }
+
+  _startFrameCapture() {
+    const fps = 30
+    const interval = 1000 / fps
+    let lastCapture = 0
+    const captureLoop = (t) => {
+      if (!this.isRecording) return
+      if (t - lastCapture >= interval) {
+        this.animationRecorder.captureFrame()
+        lastCapture = t
+      }
+      this._frameCaptureInterval = requestAnimationFrame(captureLoop)
+    }
+    this._frameCaptureInterval = requestAnimationFrame(captureLoop)
+  }
+
+  _stopFrameCapture() {
+    if (this._frameCaptureInterval) {
+      cancelAnimationFrame(this._frameCaptureInterval)
+      this._frameCaptureInterval = null
+    }
+  }
+
+  async stopAnimationRecording() {
+    if (!this.isRecording) return null
+    this.isRecording = false
+    this._stopFrameCapture()
+
+    await this.animationRecorder.stopRecording()
+    return {
+      frameCount: this.animationRecorder.getFrameCount(),
+      duration: this.animationRecorder.getRecordedDuration()
+    }
+  }
+
+  async exportGIF(filename) {
+    if (!this.animationRecorder) throw new Error('录制器未初始化')
+    return await this.animationRecorder.exportGIF(filename)
+  }
+
+  async exportVideo(filename, format = 'webm') {
+    if (!this.animationRecorder) throw new Error('录制器未初始化')
+    if (format === 'mp4') {
+      return await this.animationRecorder.exportMP4(filename)
+    }
+    return await this.animationRecorder.exportWebM(filename)
+  }
+
+  getRecordingInfo() {
+    if (!this.animationRecorder) return null
+    return {
+      isRecording: this.isRecording,
+      frameCount: this.animationRecorder.getFrameCount(),
+      duration: this.animationRecorder.getRecordedDuration()
+    }
+  }
+
   _animate = () => {
     this._animId = requestAnimationFrame(this._animate)
     this.controls.update()
@@ -377,6 +500,11 @@ export class SceneManager {
     if (this._animId !== null) {
       cancelAnimationFrame(this._animId)
       this._animId = null
+    }
+    this._stopFrameCapture()
+    if (this.animationRecorder) {
+      this.animationRecorder.clear()
+      this.animationRecorder = null
     }
     this.renderer.dispose()
     if (this.renderer.domElement.parentNode) {

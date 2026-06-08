@@ -300,6 +300,65 @@
         </button>
       </div>
 
+      <div class="pt-3 border-t border-wood-dark/30">
+        <div class="text-xs text-wood-light/70 mb-2 tracking-wider flex items-center justify-between">
+          <span>🎬 拆解动画录制</span>
+          <span v-if="recordingInfo.frameCount > 0" class="text-[10px] text-wood/60 font-mono">
+            {{ recordingInfo.frameCount }} 帧 · {{ recordingInfo.duration.toFixed(1) }}s
+          </span>
+        </div>
+        <div class="flex gap-2">
+          <button
+            v-if="!isRecording"
+            @click="$emit('start-recording')"
+            class="flex-1 px-3 py-2 text-xs bg-red-600/80 text-white rounded border border-red-500 hover:bg-red-600 transition-all tracking-wider font-bold flex items-center justify-center gap-1"
+          >
+            <span class="w-2 h-2 bg-white rounded-full"></span>
+            开始录制
+          </button>
+          <button
+            v-else
+            @click="$emit('stop-recording')"
+            class="flex-1 px-3 py-2 text-xs bg-red-700 text-white rounded border border-red-400 hover:bg-red-800 transition-all tracking-wider font-bold flex items-center justify-center gap-1 animate-pulse"
+          >
+            <span class="w-2 h-2 bg-red-200 rounded-sm"></span>
+            停止录制
+          </button>
+        </div>
+        <div v-if="recordingInfo.frameCount > 0 && !isRecording" class="mt-2">
+          <button
+            @click="showExportMenu = !showExportMenu"
+            class="w-full px-3 py-2 text-xs bg-wood/20 text-wood rounded border border-wood/50 hover:bg-wood/30 transition-all tracking-wider font-bold flex items-center justify-center gap-1"
+          >
+            💾 导出动画
+            <span class="text-[10px]">▼</span>
+          </button>
+          <div v-if="showExportMenu" class="mt-2 space-y-1.5 bg-wood-dark/20 rounded border border-wood-dark/40 p-2">
+            <button
+              @click="handleExportGIF"
+              class="w-full px-3 py-2 text-xs bg-wood/70 text-white rounded border border-wood-light hover:bg-wood transition-all text-left tracking-wider"
+            >
+              🎞️ 导出为 GIF 动图
+            </button>
+            <button
+              @click="handleExportVideo('webm')"
+              class="w-full px-3 py-2 text-xs bg-wood-dark/50 text-wood-light rounded border border-wood-dark/60 hover:bg-wood-dark/70 transition-all text-left tracking-wider"
+            >
+              🎥 导出为 WebM 视频
+            </button>
+            <button
+              @click="handleExportVideo('mp4')"
+              class="w-full px-3 py-2 text-xs bg-wood-dark/50 text-wood-light rounded border border-wood-dark/60 hover:bg-wood-dark/70 transition-all text-left tracking-wider"
+            >
+              📹 导出为 MP4 视频
+            </button>
+          </div>
+        </div>
+        <div class="mt-2 text-[10px] text-wood-light/40 leading-relaxed">
+          点击录制后将自动播放完整拆解动画（拆解+复原）
+        </div>
+      </div>
+
       <button
         @click="$emit('export-bom')"
         class="w-full px-3 py-2.5 text-sm bg-wood text-white rounded border border-wood-light hover:bg-wood-dark transition-all tracking-widest font-bold shadow-lg"
@@ -462,7 +521,9 @@ const props = defineProps({
   currentProjectId: { type: String, default: null },
   user: { type: Object, default: null },
   cloudProjects: { type: Array, default: () => [] },
-  syncLoading: { type: Boolean, default: false }
+  syncLoading: { type: Boolean, default: false },
+  isRecording: { type: Boolean, default: false },
+  recordingInfo: { type: Object, default: () => ({ frameCount: 0, duration: 0 }) }
 })
 
 const emit = defineEmits([
@@ -485,8 +546,14 @@ const emit = defineEmits([
   'upload-to-cloud',
   'download-from-cloud',
   'logout',
-  'go-login'
+  'go-login',
+  'start-recording',
+  'stop-recording',
+  'export-animation-gif',
+  'export-animation-video'
 ])
+
+const showExportMenu = ref(false)
 
 const projectPanelOpen = ref(false)
 const cloudTab = ref(false)
@@ -633,5 +700,15 @@ function handleExportSTLAll() {
 function handleExportSTLSeparate() {
   showSTLMenu.value = false
   emit('export-stl-separate')
+}
+
+function handleExportGIF() {
+  showExportMenu.value = false
+  emit('export-animation-gif')
+}
+
+function handleExportVideo(format) {
+  showExportMenu.value = false
+  emit('export-animation-video', format)
 }
 </script>
