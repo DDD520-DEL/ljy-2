@@ -7,6 +7,8 @@
         :explode-progress="explodeProgress"
         :wireframe-mode="wireframeMode"
         :show-annotations="showAnnotations"
+        :projects="projects"
+        :current-project-id="currentProjectId"
         @select-type="selectType"
         @param-change="updateParam"
         @explode-change="setExplode"
@@ -15,6 +17,11 @@
         @toggle-wireframe="wireframeMode = !wireframeMode"
         @toggle-annotations="toggleAnnotations"
         @export-bom="showBom = true"
+        @save-project="handleSaveProject"
+        @load-project="handleLoadProject"
+        @delete-project="handleDeleteProject"
+        @rename-project="handleRenameProject"
+        @refresh-projects="refreshProjects"
       />
     </div>
 
@@ -45,6 +52,8 @@
             :explode-progress="explodeProgress"
             :wireframe-mode="wireframeMode"
             :show-annotations="showAnnotations"
+            :projects="projects"
+            :current-project-id="currentProjectId"
             @select-type="v => { selectType(v); mobilePanelOpen = false }"
             @param-change="updateParam"
             @explode-change="setExplode"
@@ -53,6 +62,11 @@
             @toggle-wireframe="wireframeMode = !wireframeMode"
             @toggle-annotations="toggleAnnotations"
             @export-bom="showBom = true; mobilePanelOpen = false"
+            @save-project="handleSaveProject"
+            @load-project="id => { handleLoadProject(id); mobilePanelOpen = false }"
+            @delete-project="handleDeleteProject"
+            @rename-project="handleRenameProject"
+            @refresh-projects="refreshProjects"
           />
         </div>
       </div>
@@ -71,6 +85,13 @@
 import { ref, computed, onMounted, watch, reactive, nextTick } from 'vue'
 import { SceneManager } from './utils/SceneManager.js'
 import { JOINT_TYPES, INGFA_NAMES } from './models/jointTypes.js'
+import {
+  listProjects,
+  saveProject,
+  loadProject,
+  deleteProject,
+  renameProject
+} from './utils/projectManager.js'
 import ControlPanel from './components/ControlPanel.vue'
 import BomDialog from './components/BomDialog.vue'
 
@@ -83,6 +104,8 @@ const showAnnotations = ref(true)
 const showBom = ref(false)
 const mobilePanelOpen = ref(false)
 const animating = ref(false)
+const projects = ref([])
+const currentProjectId = ref(null)
 
 const defaultParams = computed(() => {
   const ps = {}
@@ -168,6 +191,73 @@ function loadJoint() {
   scene.value.setShowAnnotations(showAnnotations.value)
 }
 
+function refreshProjects() {
+  projects.value = listProjects()
+}
+
+function handleSaveProject(name, onSuccess, onError) {
+  const data = {
+    type: currentType.value,
+    params: { ...currentParams },
+    explodeProgress: explodeProgress.value,
+    wireframeMode: wireframeMode.value,
+    showAnnotations: showAnnotations.value
+  }
+  const result = saveProject(name, data)
+  if (result.success) {
+    currentProjectId.value = result.project.id
+    refreshProjects()
+    onSuccess && onSuccess()
+  } else {
+    onError && onError(result.error)
+  }
+}
+
+function handleLoadProject(id) {
+  const project = loadProject(id)
+  if (!project) return
+  const d = project.data || {}
+  if (d.type) {
+    currentType.value = d.type
+    const defs = {}
+    for (const p of JOINT_TYPES[d.type].params) {
+      defs[p.key] = p.default
+    }
+    Object.assign(currentParams, { ...defs, ...(d.params || {}) })
+  }
+  if (typeof d.explodeProgress === 'number') {
+    explodeProgress.value = d.explodeProgress
+  }
+  if (typeof d.wireframeMode === 'boolean') {
+    wireframeMode.value = d.wireframeMode
+  }
+  if (typeof d.showAnnotations === 'boolean') {
+    showAnnotations.value = d.showAnnotations
+  }
+  currentProjectId.value = project.id
+  loadJoint()
+}
+
+function handleDeleteProject(id, onSuccess) {
+  const result = deleteProject(id)
+  if (result.success) {
+    if (currentProjectId.value === id) {
+      currentProjectId.value = null
+    }
+    onSuccess && onSuccess()
+  }
+}
+
+function handleRenameProject(id, newName, onSuccess, onError) {
+  const result = renameProject(id, newName)
+  if (result.success) {
+    refreshProjects()
+    onSuccess && onSuccess()
+  } else {
+    onError && onError(result.error)
+  }
+}
+
 watch(wireframeMode, v => {
   if (scene.value) scene.value.setWireframe(v)
 })
@@ -178,6 +268,7 @@ watch(showAnnotations, v => {
 
 onMounted(async () => {
   await nextTick()
+  refreshProjects()
   if (canvasContainer.value) {
     scene.value = new SceneManager(canvasContainer.value)
     loadJoint()
