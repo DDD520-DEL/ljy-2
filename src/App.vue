@@ -141,6 +141,7 @@
       v-if="showBom"
       :components="bomComponents"
       :joint-name="currentJointInfo.name"
+      :project-name="currentProjectName"
       @close="showBom = false"
     />
 
@@ -200,6 +201,14 @@ const defaultParams = computed(() => {
 const currentParams = reactive({ ...defaultParams.value })
 
 const currentJointInfo = computed(() => JOINT_TYPES[currentType.value])
+
+const currentProjectName = computed(() => {
+  if (currentProjectId.value) {
+    const p = projects.value.find(x => x.id === currentProjectId.value)
+    if (p) return p.name
+  }
+  return ''
+})
 
 const bomComponents = computed(() => {
   if (!scene.value) return []

@@ -9,8 +9,17 @@
         <button @click="$emit('close')" class="text-wood-light/60 hover:text-wood text-xl leading-none px-2">×</button>
       </div>
 
-      <div class="flex-1 overflow-auto scrollbar-thin px-6 py-4">
-        <table class="w-full text-sm">
+      <div ref="contentRef" class="flex-1 overflow-auto scrollbar-thin px-6 py-4">
+        <div v-if="projectName" class="mb-4 pb-3 border-b border-wood-dark/30">
+          <div class="text-xs text-wood-light/50 tracking-wider">项目名称</div>
+          <div class="text-wood text-lg font-bold tracking-wider mt-1">{{ projectName }}</div>
+        </div>
+        <div class="mb-3">
+          <div class="text-xs text-wood-light/50 tracking-wider">榫卯类型</div>
+          <div class="text-wood-light font-bold tracking-wider mt-0.5">{{ jointName }}</div>
+        </div>
+
+        <table class="w-full text-sm mt-4">
           <thead>
             <tr class="text-wood text-left border-b border-wood/30">
               <th class="py-2 pr-3 font-bold tracking-wider">序号</th>
@@ -46,12 +55,23 @@
             <li>· 建议再预留 5mm~10mm 截断余量以备修整</li>
           </ul>
         </div>
+
+        <div class="mt-4 text-right text-xs text-wood-light/40">
+          生成时间：{{ formatDate(new Date()) }}
+        </div>
       </div>
 
       <div class="flex gap-3 px-6 py-4 border-t border-wood-dark/40">
         <button
+          @click="exportPDF"
+          :disabled="exporting"
+          class="flex-1 px-4 py-2 bg-wood text-white rounded border border-wood-light hover:bg-wood-dark transition-all text-sm tracking-widest font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ exporting ? '生成中...' : '📄 导出 PDF' }}
+        </button>
+        <button
           @click="exportCSV"
-          class="flex-1 px-4 py-2 bg-wood text-white rounded border border-wood-light hover:bg-wood-dark transition-all text-sm tracking-widest font-bold"
+          class="flex-1 px-4 py-2 bg-wood-dark/50 text-wood-light rounded border border-wood-dark/60 hover:bg-wood-dark/70 transition-all text-sm tracking-widest font-bold"
         >
           📥 导出 CSV
         </button>
@@ -67,18 +87,76 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { COMPONENT_COLORS } from '../models/jointTypes.js'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 const props = defineProps({
   components: { type: Array, default: () => [] },
-  jointName: { type: String, default: '' }
+  jointName: { type: String, default: '' },
+  projectName: { type: String, default: '' }
 })
 
 defineEmits(['close'])
 
+const contentRef = ref(null)
+const exporting = ref(false)
+
 function colorHex(i) {
   const c = COMPONENT_COLORS[i % COMPONENT_COLORS.length]
   return '#' + c.toString(16).padStart(6, '0')
+}
+
+function formatDate(d) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${day} ${hh}:${mm}`
+}
+
+function getFileName() {
+  const base = props.projectName || props.jointName || '物料清单'
+  const date = new Date().toISOString().slice(0, 10)
+  return `${base}_BOM_${date}.pdf`
+}
+
+async function exportPDF() {
+  if (!contentRef.value || exporting.value) return
+  exporting.value = true
+  try {
+    const target = contentRef.value
+    const canvas = await html2canvas(target, {
+      scale: 2,
+      backgroundColor: '#1a1a1a',
+      useCORS: true,
+      logging: false
+    })
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF({
+      orientation: canvas.width > canvas.height ? 'l' : 'p',
+      unit: 'mm',
+      format: 'a4'
+    })
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = pdf.internal.pageSize.getHeight()
+    const imgWidth = canvas.width
+    const imgHeight = canvas.height
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+    const finalWidth = imgWidth * ratio
+    const finalHeight = imgHeight * ratio
+    const offsetX = (pdfWidth - finalWidth) / 2
+    const offsetY = (pdfHeight - finalHeight) / 2
+    pdf.addImage(imgData, 'PNG', offsetX, offsetY, finalWidth, finalHeight)
+    pdf.save(getFileName())
+  } catch (e) {
+    console.error('PDF导出失败:', e)
+    alert('PDF导出失败，请重试')
+  } finally {
+    exporting.value = false
+  }
 }
 
 function exportCSV() {
@@ -103,7 +181,8 @@ function exportCSV() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `物料清单_${props.jointName}_${new Date().toISOString().slice(0, 10)}.csv`
+  const base = props.projectName || props.jointName || '物料清单'
+  a.download = `${base}_${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
