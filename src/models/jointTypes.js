@@ -63,6 +63,21 @@ export const JOINT_TYPES = {
   }
 }
 
+export const WOOD_TYPES = [
+  { id: 'pine', name: '松木', density: 0.45, note: '常用软木，经济实惠' },
+  { id: 'fir', name: '杉木', density: 0.40, note: '质轻易加工，耐腐性一般' },
+  { id: 'oak', name: '橡木', density: 0.75, note: '硬木，纹理美观，强度高' },
+  { id: 'walnut', name: '胡桃木', density: 0.68, note: '高档硬木，色泽深沉' },
+  { id: 'cherry', name: '樱桃木', density: 0.63, note: '纹理细腻，色泽温润' },
+  { id: 'maple', name: '枫木', density: 0.70, note: '硬度高，纹理清晰' },
+  { id: 'birch', name: '桦木', density: 0.65, note: '质地均匀，加工性能好' },
+  { id: 'ash', name: '水曲柳', density: 0.68, note: '纹理美观，韧性强' },
+  { id: 'teak', name: '柚木', density: 0.65, note: '名贵硬木，耐腐性极强' },
+  { id: 'phoenix', name: '红木（花梨）', density: 0.85, note: '传统名贵硬木，密度高' },
+  { id: 'sandalwood', name: '紫檀', density: 1.05, note: '顶级名贵木材，密度大于水' },
+  { id: 'ebony', name: '乌木', density: 1.10, note: '极致致密，极为珍贵' }
+]
+
 export const COMPONENT_COLORS = [
   0xd4a574,
   0x8b5a2b,

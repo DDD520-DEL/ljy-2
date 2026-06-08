@@ -56,6 +56,69 @@
           </ul>
         </div>
 
+        <div class="mt-5 p-4 bg-wood/10 rounded border border-wood/40">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-wood text-sm font-bold tracking-wider">🪵 用料估算汇总</div>
+            <div class="relative">
+              <select
+                v-model="selectedWoodId"
+                class="appearance-none bg-ink/60 border border-wood/40 text-wood-light text-xs rounded px-3 py-1.5 pr-8 focus:outline-none focus:border-wood cursor-pointer"
+              >
+                <option v-for="w in WOOD_TYPES" :key="w.id" :value="w.id">
+                  {{ w.name }} ({{ w.density.toFixed(2) }} g/cm³)
+                </option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-wood/60 text-xs">▼</div>
+            </div>
+          </div>
+
+          <div v-if="selectedWood" class="mb-3 text-xs text-wood-light/50 leading-relaxed">
+            {{ selectedWood.note }}
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-wood-dark/30 rounded p-3 border border-wood-dark/40">
+              <div class="text-wood-light/50 text-[11px] tracking-wider mb-1">总毛料体积</div>
+              <div class="text-wood-light font-mono font-bold">
+                {{ formatVolume(totalRawVolume) }}
+              </div>
+              <div class="text-wood/60 text-[10px] mt-0.5">= {{ components.length }} 件构件</div>
+            </div>
+            <div class="bg-wood-dark/30 rounded p-3 border border-wood-dark/40">
+              <div class="text-wood-light/50 text-[11px] tracking-wider mb-1">总净料体积</div>
+              <div class="text-wood-light font-mono font-bold">
+                {{ formatVolume(totalNetVolume) }}
+              </div>
+              <div class="text-wood/60 text-[10px] mt-0.5">刨削损耗率 ~{{ wasteRate }}%</div>
+            </div>
+            <div class="bg-wood-dark/30 rounded p-3 border border-wood-dark/40">
+              <div class="text-wood-light/50 text-[11px] tracking-wider mb-1">预估重量（毛料）</div>
+              <div class="text-wood font-mono font-bold text-base">
+                {{ formatWeight(totalRawWeight) }}
+              </div>
+              <div class="text-wood/60 text-[10px] mt-0.5">ρ = {{ selectedWood?.density.toFixed(2) }} g/cm³</div>
+            </div>
+            <div class="bg-wood-dark/30 rounded p-3 border border-wood-dark/40">
+              <div class="text-wood-light/50 text-[11px] tracking-wider mb-1">预估重量（净料）</div>
+              <div class="text-wood font-mono font-bold text-base">
+                {{ formatWeight(totalNetWeight) }}
+              </div>
+              <div class="text-wood/60 text-[10px] mt-0.5">实际成品重量</div>
+            </div>
+          </div>
+
+          <div class="mt-3 p-2.5 bg-ink/40 rounded border border-wood-dark/30">
+            <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+              <div class="text-wood-light/60">
+                <span class="text-wood/70">各构件毛料明细：</span>
+              </div>
+              <div v-for="(c, i) in components" :key="c.id" class="text-wood-light/70 font-mono">
+                {{ c.name.split('（')[0] }}: {{ formatVolume(componentRawVolume(c)) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="mt-4 text-right text-xs text-wood-light/40">
           生成时间：{{ formatDate(new Date()) }}
         </div>
@@ -87,8 +150,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { COMPONENT_COLORS } from '../models/jointTypes.js'
+import { ref, computed } from 'vue'
+import { COMPONENT_COLORS, WOOD_TYPES } from '../models/jointTypes.js'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -102,6 +165,64 @@ defineEmits(['close'])
 
 const contentRef = ref(null)
 const exporting = ref(false)
+const selectedWoodId = ref(WOOD_TYPES[0].id)
+
+const selectedWood = computed(() => WOOD_TYPES.find(w => w.id === selectedWoodId.value))
+
+function componentRawVolume(c) {
+  return c.rawSize.w * c.rawSize.h * c.rawSize.l
+}
+
+function componentNetVolume(c) {
+  return c.netSize.w * c.netSize.h * c.netSize.l
+}
+
+const totalRawVolumeMm3 = computed(() => {
+  return props.components.reduce((sum, c) => sum + componentRawVolume(c), 0)
+})
+
+const totalNetVolumeMm3 = computed(() => {
+  return props.components.reduce((sum, c) => sum + componentNetVolume(c), 0)
+})
+
+const totalRawVolume = computed(() => totalRawVolumeMm3.value)
+const totalNetVolume = computed(() => totalNetVolumeMm3.value)
+
+const wasteRate = computed(() => {
+  if (totalRawVolumeMm3.value === 0) return '0.0'
+  const rate = (1 - totalNetVolumeMm3.value / totalRawVolumeMm3.value) * 100
+  return rate.toFixed(1)
+})
+
+const totalRawWeight = computed(() => {
+  if (!selectedWood.value) return 0
+  const volumeCm3 = totalRawVolumeMm3.value / 1000
+  return volumeCm3 * selectedWood.value.density
+})
+
+const totalNetWeight = computed(() => {
+  if (!selectedWood.value) return 0
+  const volumeCm3 = totalNetVolumeMm3.value / 1000
+  return volumeCm3 * selectedWood.value.density
+})
+
+function formatVolume(mm3) {
+  if (mm3 >= 1e9) {
+    return (mm3 / 1e9).toFixed(3) + ' m³'
+  } else if (mm3 >= 1e6) {
+    return (mm3 / 1e6).toFixed(2) + ' dm³'
+  } else if (mm3 >= 1e3) {
+    return (mm3 / 1e3).toFixed(1) + ' cm³'
+  }
+  return mm3.toFixed(0) + ' mm³'
+}
+
+function formatWeight(grams) {
+  if (grams >= 1000) {
+    return (grams / 1000).toFixed(2) + ' kg'
+  }
+  return grams.toFixed(1) + ' g'
+}
 
 function colorHex(i) {
   const c = COMPONENT_COLORS[i % COMPONENT_COLORS.length]
@@ -161,7 +282,7 @@ async function exportPDF() {
 
 function exportCSV() {
   const rows = [
-    ['序号', '构件名称', '净料宽(mm)', '净料高(mm)', '净料长(mm)', '毛料宽(mm)', '毛料高(mm)', '毛料长(mm)', '余量标注']
+    ['序号', '构件名称', '净料宽(mm)', '净料高(mm)', '净料长(mm)', '毛料宽(mm)', '毛料高(mm)', '毛料长(mm)', '净料体积(cm³)', '毛料体积(cm³)', '余量标注']
   ]
   props.components.forEach((c, i) => {
     rows.push([
@@ -173,9 +294,17 @@ function exportCSV() {
       c.rawSize.w.toFixed(0),
       c.rawSize.h.toFixed(0),
       c.rawSize.l.toFixed(0),
+      (componentNetVolume(c) / 1000).toFixed(2),
+      (componentRawVolume(c) / 1000).toFixed(2),
       c.allowance
     ])
   })
+  rows.push([])
+  rows.push(['===== 用料估算汇总 ====='])
+  rows.push(['木材种类', selectedWood.value?.name || '', '密度(g/cm³)', selectedWood.value?.density || ''])
+  rows.push(['总毛料体积', formatVolume(totalRawVolumeMm3.value), '总净料体积', formatVolume(totalNetVolumeMm3.value)])
+  rows.push(['预估毛料重量', formatWeight(totalRawWeight.value), '预估净料重量', formatWeight(totalNetWeight.value)])
+  rows.push(['刨削损耗率(%)', wasteRate.value])
   const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
