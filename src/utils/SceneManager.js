@@ -27,17 +27,23 @@ export class SceneManager {
     const w = this.container.clientWidth
     const h = this.container.clientHeight
 
-    this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color(0x1a0f08)
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color(0x1a0f08)
+    this.scene = scene
+    this._scene = scene
 
-    this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 5000)
-    this.camera.position.set(250, 200, 250)
+    const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 5000)
+    camera.position.set(250, 200, 250)
+    this.camera = camera
+    this._camera = camera
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
-    this.renderer.setPixelRatio(window.devicePixelRatio)
-    this.renderer.setSize(w, h)
-    this.renderer.localClippingEnabled = true
-    this.container.appendChild(this.renderer.domElement)
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
+    renderer.setPixelRatio(window.devicePixelRatio)
+    renderer.setSize(w, h)
+    renderer.localClippingEnabled = true
+    this.container.appendChild(renderer.domElement)
+    this.renderer = renderer
+    this._renderer = renderer
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement)
 
@@ -376,14 +382,17 @@ export class SceneManager {
   }
 
   captureFrame() {
-    this.renderer.render(this.scene, this.camera)
-    const canvas = this.renderer.domElement
-    const ctx = canvas.getContext('2d') || canvas.getContext('webgl2') || canvas.getContext('webgl')
-    if (ctx && typeof ctx.readPixels === 'function') {
+    const renderer = this._renderer || this.renderer
+    const scene = this._scene || this.scene
+    const camera = this._camera || this.camera
+    renderer.render(scene, camera)
+    const canvas = renderer.domElement
+    const gl = renderer.getContext()
+    if (gl && typeof gl.readPixels === 'function') {
       const width = canvas.width
       const height = canvas.height
       const pixels = new Uint8Array(width * height * 4)
-      ctx.readPixels(0, 0, width, height, ctx.RGBA || 0x1908, ctx.UNSIGNED_BYTE || 0x1401, pixels)
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
       const flippedPixels = new Uint8Array(width * height * 4)
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
@@ -401,8 +410,13 @@ export class SceneManager {
   }
 
   captureThumbnail(maxWidth = 800, maxHeight = 600, type = 'image/jpeg', quality = 0.85) {
-    this.renderer.render(this.scene, this.camera)
-    const canvas = this.renderer.domElement
+    const renderer = this._renderer || this.renderer
+    const scene = this._scene || this.scene
+    const camera = this._camera || this.camera
+
+    renderer.render(scene, camera)
+    renderer.render(scene, camera)
+    const canvas = renderer.domElement
     const srcWidth = canvas.width
     const srcHeight = canvas.height
 
@@ -418,10 +432,51 @@ export class SceneManager {
     ctx.fillStyle = '#1a0f08'
     ctx.fillRect(0, 0, dstWidth, dstHeight)
 
+    let success = false
     try {
       ctx.drawImage(canvas, 0, 0, srcWidth, srcHeight, 0, 0, dstWidth, dstHeight)
+      const testDataUrl = offscreen.toDataURL('image/jpeg', 0.1)
+      if (testDataUrl && testDataUrl.length > 100) {
+        success = true
+      } else {
+        console.warn('drawImage 生成的图片为空，尝试 readPixels 降级方案')
+      }
     } catch (e) {
-      console.warn('直接绘制canvas失败，尝试其他方式:', e)
+      console.warn('drawImage方式失败，尝试readPixels降级方案:', e)
+    }
+
+    if (!success) {
+      try {
+        const gl = renderer.getContext()
+        if (gl) {
+          const bytes = new Uint8Array(srcWidth * srcHeight * 4)
+          const format = gl.RGBA
+          const typeGL = gl.UNSIGNED_BYTE
+          gl.readPixels(0, 0, srcWidth, srcHeight, format, typeGL, bytes)
+
+          const srcCanvas = document.createElement('canvas')
+          srcCanvas.width = srcWidth
+          srcCanvas.height = srcHeight
+          const srcCtx = srcCanvas.getContext('2d')
+          const imageData = srcCtx.createImageData(srcWidth, srcHeight)
+
+          for (let y = 0; y < srcHeight; y++) {
+            for (let x = 0; x < srcWidth; x++) {
+              const srcIdx = ((srcHeight - 1 - y) * srcWidth + x) * 4
+              const dstIdx = (y * srcWidth + x) * 4
+              imageData.data[dstIdx] = bytes[srcIdx]
+              imageData.data[dstIdx + 1] = bytes[srcIdx + 1]
+              imageData.data[dstIdx + 2] = bytes[srcIdx + 2]
+              imageData.data[dstIdx + 3] = bytes[srcIdx + 3]
+            }
+          }
+          srcCtx.putImageData(imageData, 0, 0)
+          ctx.drawImage(srcCanvas, 0, 0, srcWidth, srcHeight, 0, 0, dstWidth, dstHeight)
+          success = true
+        }
+      } catch (e2) {
+        console.error('readPixels降级方案也失败了:', e2)
+      }
     }
 
     const dataUrl = offscreen.toDataURL(type, quality)

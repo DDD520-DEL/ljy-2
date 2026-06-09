@@ -216,7 +216,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, reactive, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, reactive, nextTick, shallowRef } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SceneManager } from '../utils/SceneManager.js'
 import { JOINT_TYPES, INGFA_NAMES } from '../models/jointTypes.js'
@@ -242,7 +242,7 @@ const auth = useAuth()
 
 const viewMode = ref('single')
 const canvasContainer = ref(null)
-const scene = ref(null)
+const scene = shallowRef(null)
 const currentType = ref('straight')
 const explodeProgress = ref(0)
 const wireframeMode = ref(true)
