@@ -23,6 +23,10 @@ export class SceneManager {
     this._fpsFrameCount = 0
     this._fps = 0
     this._fpsCallback = null
+    this._readyCallback = null
+    this._isReady = false
+    this._readyFramesNeeded = 3
+    this._readyFramesCount = 0
     this._init()
     this._animate()
   }
@@ -639,6 +643,17 @@ export class SceneManager {
     this.controls.update()
     this._updateCameraAnimation()
     this.renderer.render(this.scene, this.camera)
+
+    if (!this._isReady && this.componentMeshes.length > 0) {
+      this._readyFramesCount++
+      if (this._readyFramesCount >= this._readyFramesNeeded) {
+        this._isReady = true
+        if (this._readyCallback) {
+          this._readyCallback()
+        }
+      }
+    }
+
     this._fpsFrameCount++
     const now = performance.now()
     if (now - this._fpsLastTime >= 500) {
@@ -651,6 +666,13 @@ export class SceneManager {
 
   setFPSCallback(callback) {
     this._fpsCallback = callback
+  }
+
+  setReadyCallback(callback) {
+    this._readyCallback = callback
+    if (this._isReady) {
+      callback && callback()
+    }
   }
 
   getStatus() {

@@ -147,6 +147,8 @@
       </div>
 
       <div ref="canvasContainer" class="flex-1 relative">
+        <SceneLoader :visible="sceneLoading" />
+
         <div class="absolute top-4 left-4 z-20 backdrop-blur-sm px-4 py-2 rounded-lg border border-wood/30" style="background-color: var(--color-ink-alpha-80);">
           <div class="text-wood text-sm font-bold tracking-widest">{{ currentJointInfo.name }}</div>
           <div class="text-wood-light/60 text-xs mt-0.5">{{ currentJointInfo.description }}</div>
@@ -449,6 +451,7 @@ import KnowledgeCard from '../components/KnowledgeCard.vue'
 import KeyboardShortcutsPanel from '../components/KeyboardShortcutsPanel.vue'
 import StatusBar from '../components/StatusBar.vue'
 import OnboardingGuide from '../components/OnboardingGuide.vue'
+import SceneLoader from '../components/SceneLoader.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -495,6 +498,7 @@ const ONBOARDING_KEY = 'mortise_tenon_onboarding_completed'
 const statusFPS = ref(0)
 const statusCameraPosition = ref({ x: '0.0', y: '0.0', z: '0.0' })
 const statusComponentCount = ref(0)
+const sceneLoading = ref(true)
 let _statusUpdateInterval = null
 
 const defaultParams = computed(() => {
@@ -1573,6 +1577,11 @@ onMounted(async () => {
     scene.value = new SceneManager(canvasContainer.value)
     scene.value.setFPSCallback((fps) => {
       statusFPS.value = fps
+    })
+    scene.value.setReadyCallback(() => {
+      setTimeout(() => {
+        sceneLoading.value = false
+      }, 200)
     })
     scene.value.applyTheme(themeState.theme)
     loadJoint()
