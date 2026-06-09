@@ -2,19 +2,19 @@
   <Teleport to="body">
     <div v-if="visible" class="fixed inset-0 z-[9999]">
       <div
+        v-if="highlightRect"
         class="absolute inset-0 bg-black/60 pointer-events-none"
         :style="{
-          clipPath: highlightRect
-            ? `polygon(
-                0% 0%, 0% 100%,
-                ${highlightRect.left}px 100%, ${highlightRect.left}px ${highlightRect.top}px,
-                ${highlightRect.right}px ${highlightRect.top}px, ${highlightRect.right}px ${highlightRect.bottom}px,
-                ${highlightRect.left}px ${highlightRect.bottom}px, ${highlightRect.left}px 100%,
-                100% 100%, 100% 0%
-              )`
-            : 'none'
+          clipPath: `polygon(
+              0% 0%, 0% 100%,
+              ${highlightRect.left}px 100%, ${highlightRect.left}px ${highlightRect.top}px,
+              ${highlightRect.right}px ${highlightRect.top}px, ${highlightRect.right}px ${highlightRect.bottom}px,
+              ${highlightRect.left}px ${highlightRect.bottom}px, ${highlightRect.left}px 100%,
+              100% 100%, 100% 0%
+            )`
         }"
       ></div>
+      <div v-else class="absolute inset-0 bg-black/60 pointer-events-none"></div>
 
       <div
         v-if="highlightRect"
@@ -30,13 +30,15 @@
       <div
         v-if="currentStep"
         class="absolute z-10 max-w-xs transition-all duration-300 ease-out"
-        :style="tooltipStyle"
+        :class="centeredMode ? 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2' : ''"
+        :style="centeredMode ? {} : tooltipStyle"
       >
         <div
           class="relative rounded-xl border border-wood/40 p-5 shadow-2xl font-song"
           style="background-color: var(--color-ink);"
         >
           <div
+            v-if="!centeredMode"
             class="absolute w-3 h-3 bg-wood-dark/50 border-l border-t border-wood/40"
             :class="arrowClass"
           ></div>
@@ -56,6 +58,10 @@
           <p class="text-wood-light/80 text-sm leading-relaxed mb-5">
             {{ currentStep.description }}
           </p>
+
+          <div v-if="centeredMode" class="mb-4 px-3 py-2 rounded bg-wood-dark/30 border border-wood-dark/40 text-[11px] text-wood-light/60 leading-relaxed">
+            💡 提示：当前目标区域暂不可见，请先完成前置操作
+          </div>
 
           <div class="flex items-center justify-between">
             <button
@@ -112,6 +118,7 @@ const highlightRect = ref(null)
 const updateTimer = ref(null)
 
 const currentStep = computed(() => props.steps[currentStepIndex.value] || null)
+const centeredMode = computed(() => !highlightRect.value)
 
 const arrowClass = computed(() => {
   const pos = currentStep.value?.position || 'right'
@@ -177,33 +184,38 @@ const tooltipStyle = computed(() => {
   }
 })
 
+function resolveTarget(selector) {
+  if (!selector) return null
+  if (typeof selector === 'string') {
+    return document.querySelector(selector)
+  }
+  if (selector instanceof HTMLElement) return selector
+  if (selector && selector.$el) return selector.$el
+  if (selector && selector.nodeType === 1) return selector
+  return null
+}
+
 function updateHighlight() {
   if (!props.visible || !currentStep.value) {
     highlightRect.value = null
     return
   }
-  const selector = currentStep.value.target
-  let el = null
-  if (typeof selector === 'string') {
-    el = document.querySelector(selector)
-  } else if (selector instanceof HTMLElement) {
-    el = selector
-  } else if (selector && selector.$el) {
-    el = selector.$el
-  }
-  if (el) {
+  const el = resolveTarget(currentStep.value.target)
+  if (el && el.getBoundingClientRect) {
     const r = el.getBoundingClientRect()
-    highlightRect.value = {
-      top: r.top - 4,
-      left: r.left - 4,
-      right: r.right + 4,
-      bottom: r.bottom + 4,
-      width: r.width + 8,
-      height: r.height + 8
+    if (r.width > 0 && r.height > 0) {
+      highlightRect.value = {
+        top: r.top - 4,
+        left: r.left - 4,
+        right: r.right + 4,
+        bottom: r.bottom + 4,
+        width: r.width + 8,
+        height: r.height + 8
+      }
+      return
     }
-  } else {
-    highlightRect.value = null
   }
+  highlightRect.value = null
 }
 
 function nextStep() {
@@ -248,6 +260,10 @@ watch(() => props.visible, (v) => {
       updateTimer.value = null
     }
   }
+})
+
+watch(currentStepIndex, () => {
+  nextTick(updateHighlight)
 })
 
 onMounted(() => {

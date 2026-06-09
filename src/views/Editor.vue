@@ -170,6 +170,7 @@
         </div>
 
         <button
+          ref="mobileParamsButton"
           class="absolute top-4 right-4 z-20 md:hidden backdrop-blur-sm px-3 py-2 rounded border border-wood/30 text-wood text-sm mt-10" style="background-color: var(--color-ink-alpha-80);"
           @click="mobilePanelOpen = !mobilePanelOpen"
         >
@@ -189,6 +190,7 @@
           <div class="absolute inset-0 bg-black/50" @click="mobilePanelOpen = false"></div>
           <div class="absolute right-0 top-0 bottom-0 w-80">
             <ControlPanel
+              ref="mobileControlPanel"
               :current-type="currentType"
               :params="currentParams"
               :presets="presets"
@@ -313,6 +315,7 @@
       :steps="onboardingSteps"
       @skip="completeOnboarding"
       @finish="completeOnboarding"
+      @step-change="handleOnboardingStepChange"
     />
   </div>
 </template>
@@ -385,7 +388,10 @@ const currentPresetId = ref(null)
 const shortcutsPanelOpen = ref(false)
 const jointTypeKeys = Object.keys(JOINT_TYPES)
 const controlPanel = ref(null)
+const mobileControlPanel = ref(null)
+const mobileParamsButton = ref(null)
 const onboardingVisible = ref(false)
+const isMobileView = ref(false)
 const ONBOARDING_KEY = 'mortise_tenon_onboarding_completed'
 const statusFPS = ref(0)
 const statusCameraPosition = ref({ x: '0.0', y: '0.0', z: '0.0' })
@@ -427,35 +433,88 @@ function showToast(msg, duration = 2000) {
   setTimeout(() => { toast.value = '' }, duration)
 }
 
-const onboardingSteps = computed(() => [
-  {
-    icon: '🔧',
-    title: '榫卯类型选择',
-    description: '从这里选择不同的榫卯结构类型，如直榫、燕尾榫、格肩榫等。每种类型都有独特的传统工艺特点。',
-    target: controlPanel.value?.jointTypeSection?.$el || controlPanel.value?.jointTypeSection,
-    position: 'right'
-  },
-  {
-    icon: '🎚️',
-    title: '调节参数滑块',
-    description: '通过这些滑块精细调整榫卯的各项几何参数，如榫头长度、宽度、厚度等，实时预览模型变化。',
-    target: controlPanel.value?.paramSlidersSection?.$el || controlPanel.value?.paramSlidersSection,
-    position: 'right'
-  },
-  {
-    icon: '🎬',
-    title: '拆解动画',
-    description: '点击「▶ 动画」按钮播放拆解动画，观察榫卯结构的安装与拆卸过程，直观理解其构造原理。',
-    target: controlPanel.value?.explodeSection?.$el || controlPanel.value?.explodeSection,
-    position: 'right'
+function getActivePanel() {
+  return isMobileView.value ? mobileControlPanel.value : controlPanel.value
+}
+
+function getSectionEl(sectionName) {
+  const panel = getActivePanel()
+  if (!panel) return null
+  const sectionRef = panel[sectionName]
+  if (!sectionRef) return null
+  return sectionRef.$el || sectionRef
+}
+
+function checkIsMobileView() {
+  isMobileView.value = window.innerWidth < 768
+}
+
+const onboardingSteps = computed(() => {
+  if (isMobileView.value) {
+    return [
+      {
+        icon: '⚙️',
+        title: '打开参数面板',
+        description: '点击右上角「⚙ 参数」按钮打开控制面板，即可调整榫卯类型与参数。',
+        target: mobileParamsButton.value?.$el || mobileParamsButton.value,
+        position: 'bottom'
+      },
+      {
+        icon: '🔧',
+        title: '榫卯类型选择',
+        description: '从这里选择不同的榫卯结构类型，如直榫、燕尾榫、格肩榫等。每种类型都有独特的传统工艺特点。',
+        target: getSectionEl('jointTypeSection'),
+        position: 'left'
+      },
+      {
+        icon: '🎚️',
+        title: '调节参数滑块',
+        description: '通过这些滑块精细调整榫卯的各项几何参数，如榫头长度、宽度、厚度等，实时预览模型变化。',
+        target: getSectionEl('paramSlidersSection'),
+        position: 'left'
+      },
+      {
+        icon: '🎬',
+        title: '拆解动画',
+        description: '点击「▶ 动画」按钮播放拆解动画，观察榫卯结构的安装与拆卸过程，直观理解其构造原理。',
+        target: getSectionEl('explodeSection'),
+        position: 'left'
+      }
+    ]
   }
-])
+  return [
+    {
+      icon: '🔧',
+      title: '榫卯类型选择',
+      description: '从这里选择不同的榫卯结构类型，如直榫、燕尾榫、格肩榫等。每种类型都有独特的传统工艺特点。',
+      target: getSectionEl('jointTypeSection'),
+      position: 'right'
+    },
+    {
+      icon: '🎚️',
+      title: '调节参数滑块',
+      description: '通过这些滑块精细调整榫卯的各项几何参数，如榫头长度、宽度、厚度等，实时预览模型变化。',
+      target: getSectionEl('paramSlidersSection'),
+      position: 'right'
+    },
+    {
+      icon: '🎬',
+      title: '拆解动画',
+      description: '点击「▶ 动画」按钮播放拆解动画，观察榫卯结构的安装与拆卸过程，直观理解其构造原理。',
+      target: getSectionEl('explodeSection'),
+      position: 'right'
+    }
+  ]
+})
 
 function completeOnboarding() {
   try {
     localStorage.setItem(ONBOARDING_KEY, 'true')
   } catch (e) {}
   onboardingVisible.value = false
+  if (isMobileView.value) {
+    mobilePanelOpen.value = false
+  }
 }
 
 function checkOnboarding() {
@@ -463,10 +522,20 @@ function checkOnboarding() {
     const completed = localStorage.getItem(ONBOARDING_KEY)
     if (!completed) {
       nextTick(() => {
+        checkIsMobileView()
+        if (isMobileView.value) {
+          mobilePanelOpen.value = false
+        }
         onboardingVisible.value = true
       })
     }
   } catch (e) {}
+}
+
+function handleOnboardingStepChange(idx) {
+  if (isMobileView.value && idx >= 1 && !mobilePanelOpen.value) {
+    mobilePanelOpen.value = true
+  }
 }
 
 function getStateSnapshot() {
@@ -1297,6 +1366,8 @@ function handleKeydown(e) {
 
 onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('resize', checkIsMobileView)
+  checkIsMobileView()
   await nextTick()
   refreshProjects()
   refreshPresets()
@@ -1343,6 +1414,7 @@ watch(() => themeState.theme, (newTheme) => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', checkIsMobileView)
   if (_statusUpdateInterval) {
     clearInterval(_statusUpdateInterval)
     _statusUpdateInterval = null
