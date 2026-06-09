@@ -1,7 +1,7 @@
 <template>
   <div class="relative z-20 font-song" :class="expanded ? 'w-80' : 'w-auto'">
     <div
-      class="bg-ink/90 backdrop-blur-sm border border-wood/30 rounded-lg shadow-2xl overflow-hidden transition-all duration-300"
+      class="backdrop-blur-sm border border-wood/30 rounded-lg shadow-2xl overflow-hidden transition-all duration-300" style="background-color: var(--color-ink-alpha-90);"
       :class="expanded ? 'max-h-[520px]' : 'max-h-[44px]'"
     >
       <div

@@ -8,21 +8,103 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root,
+[data-theme="dark"] {
+  --color-wood-light: #d4a574;
+  --color-wood: #8b5a2b;
+  --color-wood-dark: #5c3a1e;
+  --color-ink: #2c1810;
+  --color-ink-alpha-80: rgba(44, 24, 16, 0.8);
+  --color-ink-alpha-90: rgba(44, 24, 16, 0.9);
+  --color-ink-alpha-95: rgba(44, 24, 16, 0.95);
+  --color-text-primary: #d4a574;
+  --color-text-secondary: #e8d4b8;
+  --color-text-muted: rgba(212, 165, 116, 0.5);
+  --color-border: rgba(139, 90, 43, 0.4);
+  --color-border-soft: rgba(92, 58, 30, 0.3);
+  --color-surface: rgba(92, 58, 30, 0.3);
+  --color-surface-hover: rgba(92, 58, 30, 0.5);
+  --color-surface-active: rgba(139, 90, 43, 0.2);
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --range-track: #5c3a1e;
+  --range-thumb: #d4a574;
+  --range-thumb-border: #5c3a1e;
+  --scrollbar-track: rgba(139, 90, 43, 0.1);
+  --scrollbar-thumb: rgba(139, 90, 43, 0.4);
+  --status-bg: rgba(26, 15, 8, 0.8);
+  --status-border: rgba(180, 120, 60, 0.3);
+  --status-label: rgba(200, 160, 110, 0.6);
+  --status-value: #d4b896;
+  --status-accent: #e6b878;
+  --kbd-bg: #2a1a10;
+  --kbd-border: #5c3a1e;
+  --kbd-text: #d4a574;
+  --canvas-bg: #1a0f08;
+  --panel-bg: rgba(44, 24, 16, 0.9);
+  --info-badge-bg: rgba(44, 24, 16, 0.8);
+}
+
+[data-theme="light"] {
+  --color-wood-light: #a0673c;
+  --color-wood: #8b5a2b;
+  --color-wood-dark: #6b4423;
+  --color-ink: #f5efe6;
+  --color-ink-alpha-80: rgba(245, 239, 230, 0.8);
+  --color-ink-alpha-90: rgba(245, 239, 230, 0.9);
+  --color-ink-alpha-95: rgba(255, 252, 247, 0.95);
+  --color-text-primary: #6b4423;
+  --color-text-secondary: #5c3a1e;
+  --color-text-muted: rgba(107, 68, 35, 0.55);
+  --color-border: rgba(139, 90, 43, 0.35);
+  --color-border-soft: rgba(139, 90, 43, 0.18);
+  --color-surface: rgba(180, 140, 95, 0.25);
+  --color-surface-hover: rgba(180, 140, 95, 0.4);
+  --color-surface-active: rgba(139, 90, 43, 0.15);
+  --color-overlay: rgba(60, 40, 20, 0.45);
+  --range-track: #c4a574;
+  --range-thumb: #8b5a2b;
+  --range-thumb-border: #6b4423;
+  --scrollbar-track: rgba(139, 90, 43, 0.08);
+  --scrollbar-thumb: rgba(139, 90, 43, 0.3);
+  --status-bg: rgba(245, 239, 230, 0.9);
+  --status-border: rgba(139, 90, 43, 0.25);
+  --status-label: rgba(107, 68, 35, 0.6);
+  --status-value: #5c3a1e;
+  --status-accent: #8b5a2b;
+  --kbd-bg: #fdf8f0;
+  --kbd-border: #c4a574;
+  --kbd-text: #6b4423;
+  --canvas-bg: #ede4d6;
+  --panel-bg: rgba(250, 244, 235, 0.95);
+  --info-badge-bg: rgba(250, 244, 235, 0.85);
+}
+
 html, body, #app {
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background-color: var(--color-ink);
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+#app {
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+*, *::before, *::after {
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease, fill 0.4s ease, stroke 0.4s ease;
 }
 
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  background: #5c3a1e;
+  background: var(--range-track);
   border-radius: 2px;
   outline: none;
+  transition: background 0.4s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -30,28 +112,32 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 14px;
   height: 14px;
-  background: #d4a574;
+  background: var(--range-thumb);
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid #5c3a1e;
+  border: 2px solid var(--range-thumb-border);
+  transition: background 0.4s ease, border-color 0.4s ease;
 }
 
 input[type="range"]::-moz-range-thumb {
   width: 14px;
   height: 14px;
-  background: #d4a574;
+  background: var(--range-thumb);
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid #5c3a1e;
+  border: 2px solid var(--range-thumb-border);
+  transition: background 0.4s ease, border-color 0.4s ease;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: rgba(139, 90, 43, 0.1);
+  background: var(--scrollbar-track);
+  transition: background 0.4s ease;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(139, 90, 43, 0.4);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
+  transition: background 0.4s ease;
 }

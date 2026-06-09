@@ -5,7 +5,7 @@
     @click.self="$emit('close')"
   >
     <div class="absolute inset-0 bg-black/60" @click="$emit('close')"></div>
-    <div class="relative bg-ink border border-wood/40 rounded-lg shadow-2xl w-[420px] max-h-[75vh] flex flex-col font-song">
+    <div class="relative border border-wood/40 rounded-lg shadow-2xl w-[420px] max-h-[75vh] flex flex-col font-song" style="background-color: var(--color-ink);">
       <div class="px-5 py-4 border-b border-wood-dark/40 flex items-center justify-between">
         <div>
           <h3 class="text-wood font-bold text-lg tracking-wider">📜 操作历史</h3>

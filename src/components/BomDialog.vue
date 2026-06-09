@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="$emit('close')">
-    <div class="bg-ink border border-wood/50 rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col font-song">
+    <div class="border border-wood/50 rounded-lg shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col font-song" style="background-color: var(--color-ink);">
       <div class="flex justify-between items-center px-6 py-4 border-b border-wood-dark/40">
         <div>
           <h2 class="text-wood text-lg font-bold tracking-widest">物料清单 BOM</h2>
@@ -62,7 +62,7 @@
             <div class="relative">
               <select
                 v-model="selectedWoodId"
-                class="appearance-none bg-ink/60 border border-wood/40 text-wood-light text-xs rounded px-3 py-1.5 pr-8 focus:outline-none focus:border-wood cursor-pointer"
+                class="appearance-none border border-wood/40 text-wood-light text-xs rounded px-3 py-1.5 pr-8 focus:outline-none focus:border-wood cursor-pointer" style="background-color: var(--color-ink-alpha-80);"
               >
                 <option v-for="w in WOOD_TYPES" :key="w.id" :value="w.id">
                   {{ w.name }} ({{ w.density.toFixed(2) }} g/cm³)
@@ -107,7 +107,7 @@
             </div>
           </div>
 
-          <div class="mt-3 p-2.5 bg-ink/40 rounded border border-wood-dark/30">
+          <div class="mt-3 p-2.5 rounded border border-wood-dark/30" style="background-color: var(--color-surface);">
             <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
               <div class="text-wood-light/60">
                 <span class="text-wood/70">各构件毛料明细：</span>
@@ -251,7 +251,7 @@ async function exportPDF() {
     const target = contentRef.value
     const canvas = await html2canvas(target, {
       scale: 2,
-      backgroundColor: '#1a1a1a',
+      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-ink').trim() || '#1a1a1a',
       useCORS: true,
       logging: false
     })

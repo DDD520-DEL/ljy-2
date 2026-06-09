@@ -59,11 +59,12 @@ const fpsColor = computed(() => {
   align-items: center;
   gap: 16px;
   padding: 8px 16px;
-  background: rgba(26, 15, 8, 0.8);
+  background: var(--status-bg);
   backdrop-filter: blur(8px);
-  border-top: 1px solid rgba(180, 120, 60, 0.3);
+  border-top: 1px solid var(--status-border);
   font-family: "Source Han Serif SC", "Noto Serif SC", serif;
   user-select: none;
+  transition: background-color 0.4s ease, border-color 0.4s ease;
 }
 
 .status-item {
@@ -74,15 +75,17 @@ const fpsColor = computed(() => {
 
 .status-label {
   font-size: 11px;
-  color: rgba(200, 160, 110, 0.6);
+  color: var(--status-label);
   letter-spacing: 1px;
   font-weight: 600;
+  transition: color 0.4s ease;
 }
 
 .status-value {
   font-size: 13px;
-  color: #d4b896;
+  color: var(--status-value);
   font-weight: 500;
+  transition: color 0.4s ease;
 }
 
 .status-value.mono {
@@ -92,8 +95,9 @@ const fpsColor = computed(() => {
 }
 
 .status-value.accent {
-  color: #e6b878;
+  color: var(--status-accent);
   font-weight: 600;
+  transition: color 0.4s ease;
 }
 
 .fps-good {
@@ -114,6 +118,8 @@ const fpsColor = computed(() => {
 .status-divider {
   width: 1px;
   height: 16px;
-  background: rgba(180, 120, 60, 0.25);
+  background: var(--status-border);
+  opacity: 0.7;
+  transition: background 0.4s ease;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full flex bg-ink text-white">
+  <div class="w-full h-full flex text-white" style="background-color: var(--color-ink);">
     <template v-if="viewMode === 'single'">
       <div class="hidden md:block w-80 lg:w-96 flex-shrink-0 z-10 shadow-2xl">
         <ControlPanel
@@ -49,13 +49,13 @@
       </div>
 
       <div ref="canvasContainer" class="flex-1 relative">
-        <div class="absolute top-4 left-4 z-20 bg-ink/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-wood/30">
+        <div class="absolute top-4 left-4 z-20 backdrop-blur-sm px-4 py-2 rounded-lg border border-wood/30" style="background-color: var(--color-ink-alpha-80);">
           <div class="text-wood text-sm font-bold tracking-widest">{{ currentJointInfo.name }}</div>
           <div class="text-wood-light/60 text-xs mt-0.5">{{ currentJointInfo.description }}</div>
         </div>
 
         <div class="absolute top-4 right-4 z-20 hidden md:flex items-start gap-2">
-          <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden mt-1">
+          <div class="flex backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden mt-1" style="background-color: var(--color-ink-alpha-80);">
             <button
               @click="viewMode = 'single'"
               class="px-3 py-2 text-xs font-bold tracking-wider bg-wood text-white"
@@ -73,7 +73,7 @@
         </div>
 
         <div class="absolute top-4 right-4 z-20 md:hidden">
-          <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden">
+          <div class="flex backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden" style="background-color: var(--color-ink-alpha-80);">
             <button
               @click="viewMode = 'single'"
               class="px-3 py-2 text-xs font-bold tracking-wider bg-wood text-white"
@@ -89,14 +89,14 @@
           </div>
         </div>
 
-        <div class="absolute bottom-14 left-4 z-20 bg-ink/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-wood/30 text-[11px] text-wood-light/70 leading-relaxed">
+        <div class="absolute bottom-14 left-4 z-20 backdrop-blur-sm px-3 py-2 rounded-lg border border-wood/30 text-[11px] text-wood-light/70 leading-relaxed" style="background-color: var(--color-ink-alpha-80);">
           <div>🖱️ 拖动旋转 · 滚轮/双指缩放</div>
           <div>📱 单指旋转 · 双指捏合缩放</div>
           <div class="text-wood/60 mt-1 pt-1 border-t border-wood-dark/30">⌨️ 按 <span class="text-wood font-bold">?</span> 查看所有快捷键</div>
         </div>
 
         <div class="absolute bottom-14 right-4 z-20 flex flex-col items-end gap-2">
-          <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden shadow-lg">
+          <div class="flex backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden shadow-lg" style="background-color: var(--color-ink-alpha-80);">
             <button
               class="px-3 py-2 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all border-r border-wood-dark/40"
               @click="handleViewPreset('front')"
@@ -135,7 +135,8 @@
           </div>
           <div class="flex gap-2">
             <button
-              class="bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+              class="backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+              style="background-color: var(--color-ink-alpha-80);"
               @click="shortcutsPanelOpen = true"
               title="键盘快捷键 (按 ? 呼出)"
             >
@@ -143,7 +144,8 @@
               <span class="tracking-wider font-bold">快捷键</span>
             </button>
             <button
-              class="bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+              class="backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+              style="background-color: var(--color-ink-alpha-80);"
               @click="historyPanelOpen = true"
             >
               <span>📜</span>
@@ -167,7 +169,7 @@
         </div>
 
         <button
-          class="absolute top-4 right-4 z-20 md:hidden bg-ink/80 backdrop-blur-sm px-3 py-2 rounded border border-wood/30 text-wood text-sm mt-10"
+          class="absolute top-4 right-4 z-20 md:hidden backdrop-blur-sm px-3 py-2 rounded border border-wood/30 text-wood text-sm mt-10" style="background-color: var(--color-ink-alpha-80);"
           @click="mobilePanelOpen = !mobilePanelOpen"
         >
           ⚙ 参数
@@ -236,12 +238,12 @@
 
     <template v-else>
       <div class="w-full h-full flex flex-col">
-        <div class="px-4 py-2 border-b border-wood-dark/40 bg-ink/90 backdrop-blur-sm flex items-center justify-between flex-shrink-0">
+        <div class="px-4 py-2 border-b border-wood-dark/40 backdrop-blur-sm flex items-center justify-between flex-shrink-0" style="background-color: var(--color-ink-alpha-90);">
           <div class="text-wood text-sm font-bold tracking-widest">
             ⇄ 并排对比模式
           </div>
           <div class="flex gap-2">
-            <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden">
+            <div class="flex backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden" style="background-color: var(--color-ink-alpha-80);">
               <button
                 @click="viewMode = 'single'"
                 class="px-3 py-1.5 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all"
@@ -301,7 +303,7 @@
       @close="shortcutsPanelOpen = false"
     />
 
-    <div v-if="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-ink border border-wood/50 text-wood-light px-5 py-2.5 rounded-lg shadow-2xl text-sm tracking-wider">
+    <div v-if="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 border border-wood/50 text-wood-light px-5 py-2.5 rounded-lg shadow-2xl text-sm tracking-wider" style="background-color: var(--color-ink);">
       {{ toast }}
     </div>
   </div>
@@ -327,6 +329,7 @@ import {
 } from '../utils/presetManager.js'
 import { api } from '../utils/api.js'
 import { useAuth } from '../stores/auth.js'
+import { useTheme } from '../stores/theme.js'
 import { decodeShareData } from '../utils/shareUtils.js'
 import ControlPanel from '../components/ControlPanel.vue'
 import BomDialog from '../components/BomDialog.vue'
@@ -340,6 +343,7 @@ import StatusBar from '../components/StatusBar.vue'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuth()
+const { state: themeState, initTheme } = useTheme()
 
 const viewMode = ref('single')
 const canvasContainer = ref(null)
@@ -1248,6 +1252,7 @@ onMounted(async () => {
     scene.value.setFPSCallback((fps) => {
       statusFPS.value = fps
     })
+    scene.value.applyTheme(themeState.theme)
     loadJoint()
     _statusUpdateInterval = setInterval(() => {
       if (scene.value) {
@@ -1271,6 +1276,12 @@ onMounted(async () => {
     historyList.value = [initItem]
     historyIndex.value = 0
   })
+})
+
+watch(() => themeState.theme, (newTheme) => {
+  if (scene.value) {
+    scene.value.applyTheme(newTheme)
+  }
 })
 
 onUnmounted(() => {

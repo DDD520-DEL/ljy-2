@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full h-full flex bg-ink text-white">
+  <div class="w-full h-full flex text-white" style="background-color: var(--color-ink);">
     <div class="flex-1 flex flex-col border-r border-wood-dark/40">
-      <div class="px-4 py-2 border-b border-wood-dark/40 bg-ink/90 backdrop-blur-sm flex items-center justify-between">
+      <div class="px-4 py-2 border-b border-wood-dark/40 backdrop-blur-sm flex items-center justify-between" style="background-color: var(--color-ink-alpha-90);">
         <div>
           <div class="text-wood text-sm font-bold tracking-widest">左 · {{ leftJointInfo.name }}</div>
           <div class="text-wood-light/60 text-[10px]">{{ leftJointInfo.description }}</div>
@@ -31,13 +31,13 @@
       </div>
 
       <div ref="leftCanvasContainer" class="flex-1 relative">
-        <div class="absolute bottom-2 left-2 z-10 bg-ink/80 backdrop-blur-sm px-2 py-1 rounded border border-wood/30 text-[10px] text-wood-light/70">
+        <div class="absolute bottom-2 left-2 z-10 backdrop-blur-sm px-2 py-1 rounded border border-wood/30 text-[10px] text-wood-light/70" style="background-color: var(--color-ink-alpha-80);">
           🖱️ 拖动旋转 · 滚轮缩放
         </div>
 
         <div v-if="leftPanelOpen" class="absolute inset-0 z-20">
           <div class="absolute inset-0 bg-black/40" @click="leftPanelOpen = false"></div>
-          <div class="absolute right-0 top-0 bottom-0 w-72 bg-ink/95 backdrop-blur-sm overflow-y-auto scrollbar-thin border-l border-wood/30">
+          <div class="absolute right-0 top-0 bottom-0 w-72 backdrop-blur-sm overflow-y-auto scrollbar-thin border-l border-wood/30" style="background-color: var(--color-ink-alpha-95);">
             <CompareSidePanel
               :current-type="leftType"
               :params="leftParams"
@@ -66,7 +66,7 @@
     <div class="w-1 bg-wood-dark/60 flex-shrink-0"></div>
 
     <div class="flex-1 flex flex-col border-l border-wood-dark/40">
-      <div class="px-4 py-2 border-b border-wood-dark/40 bg-ink/90 backdrop-blur-sm flex items-center justify-between">
+      <div class="px-4 py-2 border-b border-wood-dark/40 backdrop-blur-sm flex items-center justify-between" style="background-color: var(--color-ink-alpha-90);">
         <div>
           <div class="text-wood text-sm font-bold tracking-widest">右 · {{ rightJointInfo.name }}</div>
           <div class="text-wood-light/60 text-[10px]">{{ rightJointInfo.description }}</div>
@@ -89,13 +89,13 @@
       </div>
 
       <div ref="rightCanvasContainer" class="flex-1 relative">
-        <div class="absolute bottom-2 left-2 z-10 bg-ink/80 backdrop-blur-sm px-2 py-1 rounded border border-wood/30 text-[10px] text-wood-light/70">
+        <div class="absolute bottom-2 left-2 z-10 backdrop-blur-sm px-2 py-1 rounded border border-wood/30 text-[10px] text-wood-light/70" style="background-color: var(--color-ink-alpha-80);">
           🖱️ 拖动旋转 · 滚轮缩放
         </div>
 
         <div v-if="rightPanelOpen" class="absolute inset-0 z-20">
           <div class="absolute inset-0 bg-black/40" @click="rightPanelOpen = false"></div>
-          <div class="absolute left-0 top-0 bottom-0 w-72 bg-ink/95 backdrop-blur-sm overflow-y-auto scrollbar-thin border-r border-wood/30">
+          <div class="absolute left-0 top-0 bottom-0 w-72 backdrop-blur-sm overflow-y-auto scrollbar-thin border-r border-wood/30" style="background-color: var(--color-ink-alpha-95);">
             <CompareSidePanel
               :current-type="rightType"
               :params="rightParams"

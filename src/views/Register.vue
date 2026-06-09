@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen w-full bg-ink flex items-center justify-center p-4 font-song">
+  <div class="min-h-screen w-full flex items-center justify-center p-4 font-song" style="background-color: var(--color-ink);">
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
         <h1 class="text-wood text-3xl font-bold tracking-widest">榫卯参数化工具</h1>
         <p class="text-wood-light/60 text-sm mt-2 tracking-wider">创建账户，开启云端同步</p>
       </div>
 
-      <div class="bg-ink/80 border border-wood/30 rounded-xl p-6 shadow-2xl backdrop-blur-sm">
+      <div class="border border-wood/30 rounded-xl p-6 shadow-2xl backdrop-blur-sm" style="background-color: var(--color-ink-alpha-80);">
         <h2 class="text-wood text-xl font-bold mb-6 tracking-wider text-center">用户注册</h2>
 
         <div class="space-y-4">

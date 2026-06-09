@@ -1,22 +1,43 @@
 <template>
-  <div class="bg-ink/90 backdrop-blur-sm text-wood-light h-full flex flex-col overflow-hidden font-song">
+  <div class="backdrop-blur-sm text-wood-light h-full flex flex-col overflow-hidden font-song" style="background-color: var(--panel-bg);">
     <div class="px-5 py-4 border-b border-wood-dark/40">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-wood text-xl font-bold tracking-widest">榫卯参数化工具</h1>
           <p class="text-xs text-wood-light/60 mt-1">传统营造 · 古法今用</p>
         </div>
-        <button
-          @click="projectPanelOpen = !projectPanelOpen"
-          :class="[
-            'px-3 py-1.5 text-xs rounded border transition-all tracking-wider',
-            projectPanelOpen
-              ? 'bg-wood text-white border-wood-light'
-              : 'bg-wood-dark/50 text-wood-light/80 border-wood-dark/50 hover:bg-wood-dark/70'
-          ]"
-        >
-          📁 项目
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            @click="handleToggleTheme"
+            :title="themeState.theme === 'dark' ? '切换到浅色原木主题' : '切换到深色木纹主题'"
+            class="relative w-10 h-10 rounded-full border border-wood/40 flex items-center justify-center overflow-hidden group transition-all duration-500 hover:border-wood/70"
+            :class="themeState.theme === 'dark' ? 'bg-wood-dark/50 hover:bg-wood-dark/70' : 'bg-surface hover:bg-surface-hover'"
+          >
+            <span
+              class="absolute inset-0 flex items-center justify-center transition-all duration-500 text-base"
+              :class="themeState.theme === 'dark' ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'"
+            >
+              🌙
+            </span>
+            <span
+              class="absolute inset-0 flex items-center justify-center transition-all duration-500 text-base"
+              :class="themeState.theme === 'dark' ? 'opacity-0 rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'"
+            >
+              ☀️
+            </span>
+          </button>
+          <button
+            @click="projectPanelOpen = !projectPanelOpen"
+            :class="[
+              'px-3 py-1.5 text-xs rounded border transition-all tracking-wider',
+              projectPanelOpen
+                ? 'bg-wood text-white border-wood-light'
+                : 'bg-wood-dark/50 text-wood-light/80 border-wood-dark/50 hover:bg-wood-dark/70'
+            ]"
+          >
+            📁 项目
+          </button>
+        </div>
       </div>
 
       <div class="mt-3 pt-3 border-t border-wood-dark/30">
@@ -454,7 +475,7 @@
 
     <div v-if="saveDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" @click="closeSaveDialog"></div>
-      <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-80 shadow-2xl">
+      <div class="relative border border-wood/40 rounded-lg p-5 w-80 shadow-2xl" style="background-color: var(--color-ink);">
         <h3 class="text-wood font-bold text-lg mb-4 tracking-wider">保存项目</h3>
         <label class="block text-xs text-wood-light/70 mb-2">项目名称</label>
         <input
@@ -484,7 +505,7 @@
 
     <div v-if="renameDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" @click="closeRenameDialog"></div>
-      <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-80 shadow-2xl">
+      <div class="relative border border-wood/40 rounded-lg p-5 w-80 shadow-2xl" style="background-color: var(--color-ink);">
         <h3 class="text-wood font-bold text-lg mb-4 tracking-wider">重命名项目</h3>
         <label class="block text-xs text-wood-light/70 mb-2">新名称</label>
         <input
@@ -514,7 +535,7 @@
 
     <div v-if="deleteDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" @click="closeDeleteDialog"></div>
-      <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-80 shadow-2xl">
+      <div class="relative border border-wood/40 rounded-lg p-5 w-80 shadow-2xl" style="background-color: var(--color-ink);">
         <h3 class="text-wood font-bold text-lg mb-2 tracking-wider">确认删除</h3>
         <p class="text-sm text-wood-light/70 leading-relaxed mb-4">
           确定要删除项目「<span class="text-wood font-bold">{{ deleteTarget?.name }}</span>」吗？此操作不可撤销。
@@ -538,7 +559,7 @@
 
     <div v-if="savePresetDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" @click="closeSavePresetDialog"></div>
-      <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-80 shadow-2xl">
+      <div class="relative border border-wood/40 rounded-lg p-5 w-80 shadow-2xl" style="background-color: var(--color-ink);">
         <h3 class="text-wood font-bold text-lg mb-4 tracking-wider">保存参数预设</h3>
         <label class="block text-xs text-wood-light/70 mb-2">预设名称</label>
         <input
@@ -575,7 +596,7 @@
 
     <div v-if="deletePresetDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" @click="closeDeletePresetDialog"></div>
-      <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-80 shadow-2xl">
+      <div class="relative border border-wood/40 rounded-lg p-5 w-80 shadow-2xl" style="background-color: var(--color-ink);">
         <h3 class="text-wood font-bold text-lg mb-2 tracking-wider">确认删除</h3>
         <p class="text-sm text-wood-light/70 leading-relaxed mb-4">
           确定要删除预设「<span class="text-wood font-bold">{{ deletePresetTarget?.name }}</span>」吗？此操作不可撤销。
@@ -599,7 +620,7 @@
 
     <div v-if="uploadDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" @click="closeUploadDialog"></div>
-      <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-80 shadow-2xl">
+      <div class="relative border border-wood/40 rounded-lg p-5 w-80 shadow-2xl" style="background-color: var(--color-ink);">
         <h3 class="text-wood font-bold text-lg mb-2 tracking-wider">上传到云端</h3>
         <p class="text-sm text-wood-light/70 leading-relaxed mb-4">
           将项目「<span class="text-wood font-bold">{{ uploadTarget?.name }}</span>」上传到云端？<br/>
@@ -629,6 +650,13 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { JOINT_TYPES } from '../models/jointTypes.js'
+import { useTheme } from '../stores/theme.js'
+
+const { state: themeState, toggleTheme } = useTheme()
+
+function handleToggleTheme() {
+  toggleTheme()
+}
 
 const props = defineProps({
   currentType: { type: String, default: 'straight' },

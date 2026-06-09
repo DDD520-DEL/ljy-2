@@ -8,14 +8,33 @@ export default {
     extend: {
       colors: {
         wood: {
-          light: '#d4a574',
-          DEFAULT: '#8b5a2b',
-          dark: '#5c3a1e',
+          light: 'var(--color-wood-light)',
+          DEFAULT: 'var(--color-wood)',
+          dark: 'var(--color-wood-dark)',
         },
-        ink: '#2c1810'
+        ink: 'var(--color-ink)',
+        'ink-soft': 'var(--color-ink-soft)',
+        'ink-strong': 'var(--color-ink-strong)',
+        text: {
+          primary: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          muted: 'var(--color-text-muted)',
+        },
+        border: {
+          DEFAULT: 'var(--color-border)',
+          soft: 'var(--color-border-soft)',
+        },
+        surface: {
+          DEFAULT: 'var(--color-surface)',
+          hover: 'var(--color-surface-hover)',
+          active: 'var(--color-surface-active)',
+        }
       },
       fontFamily: {
         song: ['"Source Han Serif SC"', '"Noto Serif SC"', 'SimSun', 'serif']
+      },
+      transitionProperty: {
+        'colors': 'background-color, border-color, color, fill, stroke, box-shadow',
       }
     },
   },

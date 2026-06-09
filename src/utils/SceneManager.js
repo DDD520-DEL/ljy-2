@@ -32,7 +32,6 @@ export class SceneManager {
     const h = this.container.clientHeight
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x1a0f08)
     this.scene = scene
     this._scene = scene
 
@@ -51,9 +50,34 @@ export class SceneManager {
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement)
 
+    this._themeColors = {
+      dark: {
+        background: 0x1a0f08,
+        gridMain: 0x5c3a1e,
+        gridSub: 0x3a2414,
+        labelBg: 'rgba(44, 24, 16, 0.85)',
+        ambIntensity: 0.5,
+        dir1Intensity: 0.8,
+        dir2Intensity: 0.4,
+        thumbBg: '#1a0f08'
+      },
+      light: {
+        background: 0xede4d6,
+        gridMain: 0xa0784a,
+        gridSub: 0xc4a574,
+        labelBg: 'rgba(245, 239, 230, 0.92)',
+        ambIntensity: 0.7,
+        dir1Intensity: 1.0,
+        dir2Intensity: 0.5,
+        thumbBg: '#ede4d6'
+      }
+    }
+    this._currentTheme = 'dark'
+
     this._addLights()
     this._addGrid()
     this._addAxes()
+    this.applyTheme('dark')
 
     window.addEventListener('resize', () => this._onResize())
   }
@@ -61,26 +85,52 @@ export class SceneManager {
   _addLights() {
     const amb = new THREE.AmbientLight(0xffffff, 0.5)
     this.scene.add(amb)
+    this._ambientLight = amb
 
     const dir1 = new THREE.DirectionalLight(0xfff4e6, 0.8)
     dir1.position.set(200, 300, 150)
     this.scene.add(dir1)
+    this._dirLight1 = dir1
 
     const dir2 = new THREE.DirectionalLight(0xe6d4b4, 0.4)
     dir2.position.set(-200, 100, -150)
     this.scene.add(dir2)
+    this._dirLight2 = dir2
   }
 
   _addGrid() {
     const grid = new THREE.GridHelper(600, 20, 0x5c3a1e, 0x3a2414)
     grid.position.y = -120
     this.scene.add(grid)
+    this._gridHelper = grid
   }
 
   _addAxes() {
     const axes = new THREE.AxesHelper(80)
     axes.position.set(-250, -119, -250)
     this.scene.add(axes)
+  }
+
+  applyTheme(theme) {
+    if (!this._themeColors[theme]) theme = 'dark'
+    this._currentTheme = theme
+    const c = this._themeColors[theme]
+
+    this.scene.background = new THREE.Color(c.background)
+    if (this._ambientLight) this._ambientLight.intensity = c.ambIntensity
+    if (this._dirLight1) this._dirLight1.intensity = c.dir1Intensity
+    if (this._dirLight2) this._dirLight2.intensity = c.dir2Intensity
+
+    if (this._gridHelper) {
+      const mat1 = this._gridHelper.material[0]
+      const mat2 = this._gridHelper.material[1]
+      if (mat1) mat1.color.setHex(c.gridMain)
+      if (mat2) mat2.color.setHex(c.gridSub)
+    }
+
+    if (this.showAnnotations && this.annotationObjects.length > 0) {
+      this._addAnnotations()
+    }
   }
 
   _onResize() {
@@ -237,7 +287,8 @@ export class SceneManager {
     canvas.width = w
     canvas.height = h
     ctx.font = `bold ${fontSize}px "Source Han Serif SC", "Noto Serif SC", serif`
-    ctx.fillStyle = `rgba(44, 24, 16, 0.85)`
+    const themeColors = this._themeColors[this._currentTheme] || this._themeColors.dark
+    ctx.fillStyle = themeColors.labelBg
     ctx.fillRect(0, 0, w, h)
     ctx.fillStyle = `#${new THREE.Color(color).getHexString()}`
     ctx.textBaseline = 'middle'
@@ -433,7 +484,8 @@ export class SceneManager {
     offscreen.height = dstHeight
     const ctx = offscreen.getContext('2d')
 
-    ctx.fillStyle = '#1a0f08'
+    const themeColors = this._themeColors[this._currentTheme] || this._themeColors.dark
+    ctx.fillStyle = themeColors.thumbBg
     ctx.fillRect(0, 0, dstWidth, dstHeight)
 
     let success = false

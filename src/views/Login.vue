@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen w-full bg-ink flex items-center justify-center p-4 font-song">
+  <div class="min-h-screen w-full flex items-center justify-center p-4 font-song" style="background-color: var(--color-ink);">
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
         <h1 class="text-wood text-3xl font-bold tracking-widest">榫卯参数化工具</h1>
         <p class="text-wood-light/60 text-sm mt-2 tracking-wider">传统营造 · 古法今用 · 云端同步</p>
       </div>
 
-      <div class="bg-ink/80 border border-wood/30 rounded-xl p-6 shadow-2xl backdrop-blur-sm">
+      <div class="border border-wood/30 rounded-xl p-6 shadow-2xl backdrop-blur-sm" style="background-color: var(--color-ink-alpha-80);">
         <h2 class="text-wood text-xl font-bold mb-6 tracking-wider text-center">账户登录</h2>
 
         <div class="space-y-4">
@@ -47,7 +47,7 @@
               <div class="w-full border-t border-wood-dark/40"></div>
             </div>
             <div class="relative flex justify-center text-xs">
-              <span class="bg-ink/80 px-3 text-wood-light/50">或</span>
+              <span class="px-3 text-wood-light/50" style="background-color: var(--color-ink-alpha-80);">或</span>
             </div>
           </div>
 

@@ -5,7 +5,7 @@
     @click.self="$emit('close')"
   >
     <div class="absolute inset-0 bg-black/60" @click="$emit('close')"></div>
-    <div class="relative bg-ink border border-wood/40 rounded-lg shadow-2xl w-[640px] max-w-[92vw] max-h-[80vh] flex flex-col font-song">
+    <div class="relative border border-wood/40 rounded-lg shadow-2xl w-[640px] max-w-[92vw] max-h-[80vh] flex flex-col font-song" style="background-color: var(--color-ink);">
       <div class="px-5 py-4 border-b border-wood-dark/40 flex items-center justify-between">
         <div>
           <h3 class="text-wood font-bold text-lg tracking-wider">⌨️ 键盘快捷键</h3>
@@ -129,12 +129,13 @@ const shortcutGroups = [
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10.5px;
   font-weight: 600;
-  color: #d4a574;
-  background: #2a1a10;
-  border: 1px solid #5c3a1e;
+  color: var(--kbd-text);
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
   border-bottom-width: 2px;
   border-radius: 4px;
   line-height: 1;
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
 }
 
 .kbd-inline {
@@ -146,11 +147,12 @@ const shortcutGroups = [
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   font-weight: 600;
-  color: #d4a574;
-  background: #2a1a10;
-  border: 1px solid #5c3a1e;
+  color: var(--kbd-text);
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
   border-bottom-width: 2px;
   border-radius: 3px;
   line-height: 1;
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
 }
 </style>

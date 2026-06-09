@@ -150,7 +150,7 @@
 
     <div v-if="savePresetDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" @click="closeSavePresetDialog"></div>
-      <div class="relative bg-ink border border-wood/40 rounded-lg p-4 w-72 shadow-2xl">
+      <div class="relative border border-wood/40 rounded-lg p-4 w-72 shadow-2xl" style="background-color: var(--color-ink);">
         <h3 class="text-wood font-bold text-sm mb-3 tracking-wider">保存参数预设</h3>
         <label class="block text-[11px] text-wood-light/70 mb-1">预设名称</label>
         <input
@@ -187,7 +187,7 @@
 
     <div v-if="deletePresetDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" @click="closeDeletePresetDialog"></div>
-      <div class="relative bg-ink border border-wood/40 rounded-lg p-4 w-72 shadow-2xl">
+      <div class="relative border border-wood/40 rounded-lg p-4 w-72 shadow-2xl" style="background-color: var(--color-ink);">
         <h3 class="text-wood font-bold text-sm mb-2 tracking-wider">确认删除</h3>
         <p class="text-xs text-wood-light/70 leading-relaxed mb-3">
           确定要删除预设「<span class="text-wood font-bold">{{ deletePresetTarget?.name }}</span>」吗？此操作不可撤销。

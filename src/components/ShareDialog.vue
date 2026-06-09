@@ -1,7 +1,7 @@
 <template>
   <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center">
     <div class="absolute inset-0 bg-black/60" @click="handleClose"></div>
-    <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-96 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="relative border border-wood/40 rounded-lg p-5 w-96 shadow-2xl max-h-[90vh] overflow-y-auto" style="background-color: var(--color-ink);">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-wood font-bold text-lg tracking-wider">🔗 分享模型</h3>
         <button
