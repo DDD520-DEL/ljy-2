@@ -54,7 +54,25 @@
           <div class="text-wood-light/60 text-xs mt-0.5">{{ currentJointInfo.description }}</div>
         </div>
 
-        <div class="absolute top-4 right-4 z-20 flex gap-2">
+        <div class="absolute top-4 right-4 z-20 hidden md:flex items-start gap-2">
+          <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden mt-1">
+            <button
+              @click="viewMode = 'single'"
+              class="px-3 py-2 text-xs font-bold tracking-wider bg-wood text-white"
+            >
+              单视图
+            </button>
+            <button
+              @click="viewMode = 'compare'"
+              class="px-3 py-2 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all"
+            >
+              ⇄ 对比
+            </button>
+          </div>
+          <KnowledgeCard :joint-type="currentType" />
+        </div>
+
+        <div class="absolute top-4 right-4 z-20 md:hidden">
           <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden">
             <button
               @click="viewMode = 'single'"
@@ -251,6 +269,7 @@ import BomDialog from '../components/BomDialog.vue'
 import HistoryPanel from '../components/HistoryPanel.vue'
 import CompareView from '../components/CompareView.vue'
 import ShareDialog from '../components/ShareDialog.vue'
+import KnowledgeCard from '../components/KnowledgeCard.vue'
 
 const router = useRouter()
 const route = useRoute()
