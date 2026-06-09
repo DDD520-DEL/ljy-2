@@ -41,11 +41,16 @@
             <CompareSidePanel
               :current-type="leftType"
               :params="leftParams"
+              :presets="leftPresets"
+              :current-preset-id="leftCurrentPresetId"
               :explode-progress="leftExplode"
               :wireframe-mode="leftWireframe"
               :show-annotations="leftAnnotations"
               @select-type="selectLeftType"
               @param-change="updateLeftParam"
+              @apply-preset="handleLeftApplyPreset"
+              @save-preset="handleLeftSavePreset"
+              @delete-preset="handleLeftDeletePreset"
               @explode-change="setLeftExplode"
               @toggle-explode="toggleLeftExplode"
               @animate-explode="animateLeftExplode"
@@ -94,11 +99,16 @@
             <CompareSidePanel
               :current-type="rightType"
               :params="rightParams"
+              :presets="rightPresets"
+              :current-preset-id="rightCurrentPresetId"
               :explode-progress="rightExplode"
               :wireframe-mode="rightWireframe"
               :show-annotations="rightAnnotations"
               @select-type="selectRightType"
               @param-change="updateRightParam"
+              @apply-preset="handleRightApplyPreset"
+              @save-preset="handleRightSavePreset"
+              @delete-preset="handleRightDeletePreset"
               @explode-change="setRightExplode"
               @toggle-explode="toggleRightExplode"
               @animate-explode="animateRightExplode"
@@ -117,6 +127,12 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, reactive, nextTick } from 'vue'
 import { SceneManager } from '../utils/SceneManager.js'
 import { JOINT_TYPES } from '../models/jointTypes.js'
+import {
+  getAllPresets,
+  saveCustomPreset,
+  deleteCustomPreset,
+  presetNameExists
+} from '../utils/presetManager.js'
 import CompareSidePanel from './CompareSidePanel.vue'
 
 const emit = defineEmits(['exit-compare'])
@@ -140,6 +156,10 @@ const rightAnnotations = ref(true)
 
 const leftAnimating = ref(false)
 const rightAnimating = ref(false)
+const leftPresets = ref([])
+const rightPresets = ref([])
+const leftCurrentPresetId = ref(null)
+const rightCurrentPresetId = ref(null)
 
 function createDefaultParams(type) {
   const ps = {}
@@ -158,23 +178,99 @@ const rightJointInfo = computed(() => JOINT_TYPES[rightType.value])
 function selectLeftType(type) {
   leftType.value = type
   Object.assign(leftParams, createDefaultParams(type))
+  leftPresets.value = getAllPresets(type)
+  leftCurrentPresetId.value = null
   loadLeftJoint()
 }
 
 function selectRightType(type) {
   rightType.value = type
   Object.assign(rightParams, createDefaultParams(type))
+  rightPresets.value = getAllPresets(type)
+  rightCurrentPresetId.value = null
   loadRightJoint()
 }
 
 function updateLeftParam(key, value) {
   leftParams[key] = value
+  leftCurrentPresetId.value = null
   loadLeftJoint()
 }
 
 function updateRightParam(key, value) {
   rightParams[key] = value
+  rightCurrentPresetId.value = null
   loadRightJoint()
+}
+
+function handleLeftApplyPreset(preset) {
+  if (!preset || !preset.params) return
+  Object.assign(leftParams, preset.params)
+  leftCurrentPresetId.value = preset.id
+  loadLeftJoint()
+}
+
+function handleRightApplyPreset(preset) {
+  if (!preset || !preset.params) return
+  Object.assign(rightParams, preset.params)
+  rightCurrentPresetId.value = preset.id
+  loadRightJoint()
+}
+
+function handleLeftSavePreset(name, description, onSuccess, onError) {
+  if (presetNameExists(leftType.value, name)) {
+    onError && onError('预设名称已存在')
+    return
+  }
+  const result = saveCustomPreset(leftType.value, name, { ...leftParams }, description)
+  if (result.success) {
+    leftPresets.value = getAllPresets(leftType.value)
+    leftCurrentPresetId.value = result.preset.id
+    rightPresets.value = getAllPresets(rightType.value)
+    onSuccess && onSuccess()
+  } else {
+    onError && onError(result.error || '保存失败')
+  }
+}
+
+function handleRightSavePreset(name, description, onSuccess, onError) {
+  if (presetNameExists(rightType.value, name)) {
+    onError && onError('预设名称已存在')
+    return
+  }
+  const result = saveCustomPreset(rightType.value, name, { ...rightParams }, description)
+  if (result.success) {
+    rightPresets.value = getAllPresets(rightType.value)
+    rightCurrentPresetId.value = result.preset.id
+    leftPresets.value = getAllPresets(leftType.value)
+    onSuccess && onSuccess()
+  } else {
+    onError && onError(result.error || '保存失败')
+  }
+}
+
+function handleLeftDeletePreset(presetId, onSuccess) {
+  const result = deleteCustomPreset(leftType.value, presetId)
+  if (result.success) {
+    if (leftCurrentPresetId.value === presetId) {
+      leftCurrentPresetId.value = null
+    }
+    leftPresets.value = getAllPresets(leftType.value)
+    rightPresets.value = getAllPresets(rightType.value)
+    onSuccess && onSuccess()
+  }
+}
+
+function handleRightDeletePreset(presetId, onSuccess) {
+  const result = deleteCustomPreset(rightType.value, presetId)
+  if (result.success) {
+    if (rightCurrentPresetId.value === presetId) {
+      rightCurrentPresetId.value = null
+    }
+    rightPresets.value = getAllPresets(rightType.value)
+    leftPresets.value = getAllPresets(leftType.value)
+    onSuccess && onSuccess()
+  }
 }
 
 function setLeftExplode(v) {
@@ -267,18 +363,24 @@ function swapSides() {
   const tmpExplode = leftExplode.value
   const tmpWireframe = leftWireframe.value
   const tmpAnnotations = leftAnnotations.value
+  const tmpPresets = leftPresets.value
+  const tmpPresetId = leftCurrentPresetId.value
 
   leftType.value = rightType.value
   Object.assign(leftParams, rightParams)
   leftExplode.value = rightExplode.value
   leftWireframe.value = rightWireframe.value
   leftAnnotations.value = rightAnnotations.value
+  leftPresets.value = rightPresets.value
+  leftCurrentPresetId.value = rightCurrentPresetId.value
 
   rightType.value = tmpType
   Object.assign(rightParams, tmpParams)
   rightExplode.value = tmpExplode
   rightWireframe.value = tmpWireframe
   rightAnnotations.value = tmpAnnotations
+  rightPresets.value = tmpPresets
+  rightCurrentPresetId.value = tmpPresetId
 
   loadLeftJoint()
   loadRightJoint()
@@ -290,6 +392,8 @@ function syncFromLeft() {
   rightExplode.value = leftExplode.value
   rightWireframe.value = leftWireframe.value
   rightAnnotations.value = leftAnnotations.value
+  rightPresets.value = getAllPresets(rightType.value)
+  rightCurrentPresetId.value = leftCurrentPresetId.value
   loadRightJoint()
 }
 
@@ -299,6 +403,8 @@ function syncFromRight() {
   leftExplode.value = rightExplode.value
   leftWireframe.value = rightWireframe.value
   leftAnnotations.value = rightAnnotations.value
+  leftPresets.value = getAllPresets(leftType.value)
+  leftCurrentPresetId.value = rightCurrentPresetId.value
   loadLeftJoint()
 }
 
@@ -320,6 +426,8 @@ watch(rightAnnotations, v => {
 
 onMounted(async () => {
   await nextTick()
+  leftPresets.value = getAllPresets(leftType.value)
+  rightPresets.value = getAllPresets(rightType.value)
   if (leftCanvasContainer.value) {
     leftScene.value = new SceneManager(leftCanvasContainer.value)
     loadLeftJoint()

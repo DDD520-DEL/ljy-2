@@ -223,6 +223,56 @@
       </p>
     </div>
 
+    <div class="px-5 py-4 border-b border-wood-dark/40">
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-xs text-wood-light/70 tracking-wider">参数预设</label>
+        <button
+          @click="openSavePresetDialog"
+          class="text-[11px] text-wood hover:text-wood-light transition-all tracking-wider flex items-center gap-1"
+        >
+          <span>💾</span>
+          <span>保存当前</span>
+        </button>
+      </div>
+      <div class="space-y-1.5 max-h-40 overflow-y-auto scrollbar-thin">
+        <template v-if="presets.length === 0">
+          <div class="text-xs text-wood-light/40 py-2 text-center italic">暂无预设</div>
+        </template>
+        <template v-else>
+          <div
+            v-for="p in presets"
+            :key="p.id"
+            :class="[
+              'group flex items-center gap-2 px-3 py-2 rounded border transition-all cursor-pointer',
+              currentPresetId === p.id
+                ? 'bg-wood/20 border-wood/50'
+                : 'bg-wood-dark/30 border-wood-dark/50 hover:bg-wood-dark/50'
+            ]"
+            @click="$emit('apply-preset', p)"
+          >
+            <div class="flex-1 min-w-0">
+              <div class="text-sm text-wood-light/90 truncate flex items-center gap-1.5">
+                <span v-if="p.builtIn" class="text-[10px] bg-wood/30 text-wood px-1.5 py-0.5 rounded">内置</span>
+                <span v-else class="text-[10px] bg-wood-dark/50 text-wood-light/60 px-1.5 py-0.5 rounded">自定义</span>
+                <span>{{ p.name }}</span>
+              </div>
+              <div v-if="p.description" class="text-[10px] text-wood-light/40 mt-0.5 truncate">
+                {{ p.description }}
+              </div>
+            </div>
+            <button
+              v-if="!p.builtIn"
+              @click.stop="confirmDeletePreset(p)"
+              class="opacity-0 group-hover:opacity-100 text-xs text-red-400/70 hover:text-red-400 transition-all px-1 py-0.5"
+              title="删除预设"
+            >
+              🗑️
+            </button>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <div class="flex-1 overflow-y-auto scrollbar-thin px-5 py-4">
       <label class="block text-xs text-wood-light/70 mb-3 tracking-wider">参数调整</label>
       <div v-for="p in currentJointType?.params || []" :key="p.key" class="mb-4">
@@ -486,6 +536,67 @@
       </div>
     </div>
 
+    <div v-if="savePresetDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/60" @click="closeSavePresetDialog"></div>
+      <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-80 shadow-2xl">
+        <h3 class="text-wood font-bold text-lg mb-4 tracking-wider">保存参数预设</h3>
+        <label class="block text-xs text-wood-light/70 mb-2">预设名称</label>
+        <input
+          v-model="savePresetName"
+          type="text"
+          placeholder="请输入预设名称"
+          class="w-full bg-wood-dark/30 border border-wood-dark/50 rounded px-3 py-2 text-sm text-wood-light focus:outline-none focus:border-wood/60"
+          @keyup.enter="doSavePreset"
+        />
+        <label class="block text-xs text-wood-light/70 mb-2 mt-3">描述（可选）</label>
+        <input
+          v-model="savePresetDesc"
+          type="text"
+          placeholder="预设用途说明"
+          class="w-full bg-wood-dark/30 border border-wood-dark/50 rounded px-3 py-2 text-sm text-wood-light focus:outline-none focus:border-wood/60"
+        />
+        <div v-if="savePresetError" class="text-xs text-red-400 mt-2">{{ savePresetError }}</div>
+        <div class="flex gap-2 mt-5">
+          <button
+            @click="closeSavePresetDialog"
+            class="flex-1 px-3 py-2 text-xs bg-wood-dark/50 text-wood-light rounded border border-wood-dark/50 hover:bg-wood-dark/70 transition-all tracking-wider"
+          >
+            取消
+          </button>
+          <button
+            @click="doSavePreset"
+            class="flex-1 px-3 py-2 text-xs bg-wood text-white rounded border border-wood-light hover:bg-wood-dark transition-all tracking-wider font-bold"
+          >
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="deletePresetDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/60" @click="closeDeletePresetDialog"></div>
+      <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-80 shadow-2xl">
+        <h3 class="text-wood font-bold text-lg mb-2 tracking-wider">确认删除</h3>
+        <p class="text-sm text-wood-light/70 leading-relaxed mb-4">
+          确定要删除预设「<span class="text-wood font-bold">{{ deletePresetTarget?.name }}</span>」吗？此操作不可撤销。
+        </p>
+        <div class="flex gap-2 mt-5">
+          <button
+            @click="closeDeletePresetDialog"
+            class="flex-1 px-3 py-2 text-xs bg-wood-dark/50 text-wood-light rounded border border-wood-dark/50 hover:bg-wood-dark/70 transition-all tracking-wider"
+          >
+            取消
+          </button>
+          <button
+            @click="doDeletePreset"
+            class="flex-1 px-3 py-2 text-xs bg-red-600 text-white rounded border border-red-500 hover:bg-red-700 transition-all tracking-wider font-bold"
+          >
+            删除
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="uploadDialogOpen" class="fixed inset-0 z-50 flex items-center justify-center">
       <div class="absolute inset-0 bg-black/60" @click="closeUploadDialog"></div>
       <div class="relative bg-ink border border-wood/40 rounded-lg p-5 w-80 shadow-2xl">
@@ -522,6 +633,8 @@ import { JOINT_TYPES } from '../models/jointTypes.js'
 const props = defineProps({
   currentType: { type: String, default: 'straight' },
   params: { type: Object, default: () => ({}) },
+  presets: { type: Array, default: () => [] },
+  currentPresetId: { type: String, default: null },
   explodeProgress: { type: Number, default: 0 },
   wireframeMode: { type: Boolean, default: true },
   showAnnotations: { type: Boolean, default: true },
@@ -537,6 +650,9 @@ const props = defineProps({
 const emit = defineEmits([
   'select-type',
   'param-change',
+  'apply-preset',
+  'save-preset',
+  'delete-preset',
   'explode-change',
   'toggle-explode',
   'animate-explode',
@@ -580,6 +696,12 @@ const uploadTarget = ref(null)
 const uploadError = ref('')
 const uploading = ref(false)
 const showSTLMenu = ref(false)
+const savePresetDialogOpen = ref(false)
+const savePresetName = ref('')
+const savePresetDesc = ref('')
+const savePresetError = ref('')
+const deletePresetDialogOpen = ref(false)
+const deletePresetTarget = ref(null)
 
 const jointTypesList = computed(() => Object.values(JOINT_TYPES))
 const currentJointType = computed(() => JOINT_TYPES[props.currentType])
@@ -719,5 +841,44 @@ function handleExportGIF() {
 function handleExportVideo(format) {
   showExportMenu.value = false
   emit('export-animation-video', format)
+}
+
+function openSavePresetDialog() {
+  savePresetName.value = ''
+  savePresetDesc.value = ''
+  savePresetError.value = ''
+  savePresetDialogOpen.value = true
+}
+
+function closeSavePresetDialog() {
+  savePresetDialogOpen.value = false
+  savePresetName.value = ''
+  savePresetDesc.value = ''
+  savePresetError.value = ''
+}
+
+function doSavePreset() {
+  if (!savePresetName.value.trim()) {
+    savePresetError.value = '预设名称不能为空'
+    return
+  }
+  emit('save-preset', savePresetName.value.trim(), savePresetDesc.value.trim(), closeSavePresetDialog, err => {
+    savePresetError.value = err
+  })
+}
+
+function confirmDeletePreset(preset) {
+  deletePresetTarget.value = preset
+  deletePresetDialogOpen.value = true
+}
+
+function closeDeletePresetDialog() {
+  deletePresetDialogOpen.value = false
+  deletePresetTarget.value = null
+}
+
+function doDeletePreset() {
+  if (!deletePresetTarget.value) return
+  emit('delete-preset', deletePresetTarget.value.id, closeDeletePresetDialog)
 }
 </script>

@@ -5,6 +5,8 @@
         <ControlPanel
           :current-type="currentType"
           :params="currentParams"
+          :presets="presets"
+          :current-preset-id="currentPresetId"
           :explode-progress="explodeProgress"
           :wireframe-mode="wireframeMode"
           :show-annotations="showAnnotations"
@@ -17,6 +19,9 @@
           :recording-info="recordingInfo"
           @select-type="selectType"
           @param-change="updateParam"
+          @apply-preset="handleApplyPreset"
+          @save-preset="handleSavePreset"
+          @delete-preset="handleDeletePreset"
           @explode-change="setExplode"
           @toggle-explode="toggleExplode"
           @animate-explode="animateExplode"
@@ -106,6 +111,8 @@
             <ControlPanel
               :current-type="currentType"
               :params="currentParams"
+              :presets="presets"
+              :current-preset-id="currentPresetId"
               :explode-progress="explodeProgress"
               :wireframe-mode="wireframeMode"
               :show-annotations="showAnnotations"
@@ -118,6 +125,9 @@
               :recording-info="recordingInfo"
               @select-type="v => { selectType(v); mobilePanelOpen = false }"
               @param-change="updateParam"
+              @apply-preset="handleApplyPreset"
+              @save-preset="handleSavePreset"
+              @delete-preset="handleDeletePreset"
               @explode-change="setExplode"
               @toggle-explode="toggleExplode"
               @animate-explode="animateExplode"
@@ -227,6 +237,12 @@ import {
   deleteProject,
   renameProject
 } from '../utils/projectManager.js'
+import {
+  getAllPresets,
+  saveCustomPreset,
+  deleteCustomPreset,
+  presetNameExists
+} from '../utils/presetManager.js'
 import { api } from '../utils/api.js'
 import { useAuth } from '../stores/auth.js'
 import { decodeShareData } from '../utils/shareUtils.js'
@@ -266,6 +282,8 @@ const shareDialogOpen = ref(false)
 const shareThumbnail = ref('')
 const shareLoading = ref(false)
 const isSharedView = ref(false)
+const presets = ref([])
+const currentPresetId = ref(null)
 
 const defaultParams = computed(() => {
   const ps = {}
@@ -383,12 +401,14 @@ function selectType(type) {
   currentType.value = type
   Object.assign(currentParams, defaultParams.value)
   loadJoint()
+  refreshPresets()
   const typeName = JOINT_TYPES[type]?.name || type
   addHistory(`切换为「${typeName}」`, 'select-type', `从「${JOINT_TYPES[oldType]?.name || oldType}」切换`)
 }
 
 function updateParam(key, value) {
   currentParams[key] = value
+  currentPresetId.value = null
   loadJoint()
   const paramDef = JOINT_TYPES[currentType.value]?.params?.find(p => p.key === key)
   const paramName = paramDef?.name || key
@@ -685,6 +705,53 @@ function applyProjectData(project) {
     showAnnotations.value = d.showAnnotations
   }
   loadJoint()
+  refreshPresets()
+}
+
+function refreshPresets() {
+  presets.value = getAllPresets(currentType.value)
+  currentPresetId.value = null
+}
+
+function handleApplyPreset(preset) {
+  if (!preset || !preset.params) return
+  Object.assign(currentParams, preset.params)
+  currentPresetId.value = preset.id
+  loadJoint()
+  addHistory(`应用预设「${preset.name}」`, 'apply-preset', preset.description || '')
+}
+
+function handleSavePreset(name, description, onSuccess, onError) {
+  if (presetNameExists(currentType.value, name)) {
+    onError && onError('预设名称已存在')
+    return
+  }
+  const result = saveCustomPreset(currentType.value, name, { ...currentParams }, description)
+  if (result.success) {
+    refreshPresets()
+    currentPresetId.value = result.preset.id
+    showToast(`预设「${name}」已保存`)
+    addHistory(`保存预设「${name}」`, 'save-preset')
+    onSuccess && onSuccess()
+  } else {
+    onError && onError(result.error || '保存失败')
+  }
+}
+
+function handleDeletePreset(presetId, onSuccess) {
+  const target = presets.value.find(p => p.id === presetId)
+  const result = deleteCustomPreset(currentType.value, presetId)
+  if (result.success) {
+    if (currentPresetId.value === presetId) {
+      currentPresetId.value = null
+    }
+    refreshPresets()
+    if (target) {
+      showToast(`预设「${target.name}」已删除`)
+      addHistory(`删除预设「${target.name}」`, 'delete-preset')
+    }
+    onSuccess && onSuccess()
+  }
 }
 
 function handleDeleteProject(id, onSuccess) {
@@ -841,6 +908,7 @@ function applyShareData(shareData) {
     showAnnotations.value = vs.showAnnotations
   }
   loadJoint()
+  refreshPresets()
 }
 
 async function loadFromShareId(shareId) {
@@ -900,6 +968,7 @@ watch(() => [route.params.shareId, route.query.d], async ([newShareId, newDirect
 onMounted(async () => {
   await nextTick()
   refreshProjects()
+  refreshPresets()
   await initAuth()
   if (canvasContainer.value) {
     scene.value = new SceneManager(canvasContainer.value)
