@@ -93,6 +93,13 @@
           class="w-full"
         />
       </div>
+      <button
+        @click="$emit('reset-default')"
+        class="w-full mt-1 px-2 py-1.5 text-[11px] bg-wood-dark/50 text-wood-light rounded border border-wood/50 hover:bg-wood-dark/70 transition-all tracking-wider flex items-center justify-center gap-1"
+      >
+        <span>↺</span>
+        <span>恢复默认</span>
+      </button>
     </div>
 
     <div class="px-4 py-3 border-t border-wood-dark/40 space-y-2">
@@ -231,6 +238,7 @@ const emit = defineEmits([
   'apply-preset',
   'save-preset',
   'delete-preset',
+  'reset-default',
   'explode-change',
   'toggle-explode',
   'animate-explode',

@@ -117,6 +117,7 @@
           :recording-info="recordingInfo"
           @select-type="selectType"
           @param-change="updateParam"
+          @reset-default="handleResetDefault"
           @apply-preset="handleApplyPreset"
           @save-preset="handleSavePreset"
           @delete-preset="handleDeletePreset"
@@ -306,6 +307,7 @@
               :recording-info="recordingInfo"
               @select-type="v => { selectType(v); mobilePanelOpen = false }"
               @param-change="updateParam"
+              @reset-default="handleResetDefault"
               @apply-preset="handleApplyPreset"
               @save-preset="handleSavePreset"
               @delete-preset="handleDeletePreset"
@@ -816,6 +818,14 @@ function updateParam(key, value) {
   const unit = paramDef?.unit || ''
   const formattedVal = Number.isInteger(value) ? value : value.toFixed(2)
   addHistory(`调整 ${paramName}`, 'param-change', `${formattedVal}${unit}`)
+}
+
+function handleResetDefault() {
+  Object.assign(currentParams, defaultParams.value)
+  currentPresetId.value = null
+  loadJoint()
+  addHistory(`恢复默认参数`, 'reset-default', currentJointInfo.value?.name || '')
+  showToast('参数已恢复默认值')
 }
 
 function setExplode(v) {

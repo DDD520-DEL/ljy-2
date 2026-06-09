@@ -48,6 +48,7 @@
               :show-annotations="leftAnnotations"
               @select-type="selectLeftType"
               @param-change="updateLeftParam"
+              @reset-default="handleLeftResetDefault"
               @apply-preset="handleLeftApplyPreset"
               @save-preset="handleLeftSavePreset"
               @delete-preset="handleLeftDeletePreset"
@@ -106,6 +107,7 @@
               :show-annotations="rightAnnotations"
               @select-type="selectRightType"
               @param-change="updateRightParam"
+              @reset-default="handleRightResetDefault"
               @apply-preset="handleRightApplyPreset"
               @save-preset="handleRightSavePreset"
               @delete-preset="handleRightDeletePreset"
@@ -199,6 +201,18 @@ function updateLeftParam(key, value) {
 
 function updateRightParam(key, value) {
   rightParams[key] = value
+  rightCurrentPresetId.value = null
+  loadRightJoint()
+}
+
+function handleLeftResetDefault() {
+  Object.assign(leftParams, createDefaultParams(leftType.value))
+  leftCurrentPresetId.value = null
+  loadLeftJoint()
+}
+
+function handleRightResetDefault() {
+  Object.assign(rightParams, createDefaultParams(rightType.value))
   rightCurrentPresetId.value = null
   loadRightJoint()
 }

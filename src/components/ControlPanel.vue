@@ -336,6 +336,13 @@
           <span>{{ p.max }}{{ p.unit || '' }}</span>
         </div>
       </div>
+      <button
+        @click="$emit('reset-default')"
+        class="w-full mt-2 px-3 py-2 text-xs bg-wood-dark/50 text-wood-light rounded border border-wood/50 hover:bg-wood-dark/70 transition-all tracking-wider flex items-center justify-center gap-1.5"
+      >
+        <span>↺</span>
+        <span>恢复默认</span>
+      </button>
     </div>
 
     <div ref="explodeSection" class="px-5 py-4 border-t border-wood-dark/40 space-y-3">
@@ -710,6 +717,7 @@ const emit = defineEmits([
   'apply-preset',
   'save-preset',
   'delete-preset',
+  'reset-default',
   'explode-change',
   'toggle-explode',
   'animate-explode',
