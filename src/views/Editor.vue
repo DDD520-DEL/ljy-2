@@ -3,6 +3,7 @@
     <template v-if="viewMode === 'single'">
       <div class="hidden md:block w-80 lg:w-96 flex-shrink-0 z-10 shadow-2xl">
         <ControlPanel
+          ref="controlPanel"
           :current-type="currentType"
           :params="currentParams"
           :presets="presets"
@@ -306,6 +307,13 @@
     <div v-if="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 border border-wood/50 text-wood-light px-5 py-2.5 rounded-lg shadow-2xl text-sm tracking-wider" style="background-color: var(--color-ink);">
       {{ toast }}
     </div>
+
+    <OnboardingGuide
+      :visible="onboardingVisible"
+      :steps="onboardingSteps"
+      @skip="completeOnboarding"
+      @finish="completeOnboarding"
+    />
   </div>
 </template>
 
@@ -339,6 +347,7 @@ import ShareDialog from '../components/ShareDialog.vue'
 import KnowledgeCard from '../components/KnowledgeCard.vue'
 import KeyboardShortcutsPanel from '../components/KeyboardShortcutsPanel.vue'
 import StatusBar from '../components/StatusBar.vue'
+import OnboardingGuide from '../components/OnboardingGuide.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -375,6 +384,9 @@ const presets = ref([])
 const currentPresetId = ref(null)
 const shortcutsPanelOpen = ref(false)
 const jointTypeKeys = Object.keys(JOINT_TYPES)
+const controlPanel = ref(null)
+const onboardingVisible = ref(false)
+const ONBOARDING_KEY = 'mortise_tenon_onboarding_completed'
 const statusFPS = ref(0)
 const statusCameraPosition = ref({ x: '0.0', y: '0.0', z: '0.0' })
 const statusComponentCount = ref(0)
@@ -413,6 +425,48 @@ const bomComponents = computed(() => {
 function showToast(msg, duration = 2000) {
   toast.value = msg
   setTimeout(() => { toast.value = '' }, duration)
+}
+
+const onboardingSteps = computed(() => [
+  {
+    icon: '🔧',
+    title: '榫卯类型选择',
+    description: '从这里选择不同的榫卯结构类型，如直榫、燕尾榫、格肩榫等。每种类型都有独特的传统工艺特点。',
+    target: controlPanel.value?.jointTypeSection?.$el || controlPanel.value?.jointTypeSection,
+    position: 'right'
+  },
+  {
+    icon: '🎚️',
+    title: '调节参数滑块',
+    description: '通过这些滑块精细调整榫卯的各项几何参数，如榫头长度、宽度、厚度等，实时预览模型变化。',
+    target: controlPanel.value?.paramSlidersSection?.$el || controlPanel.value?.paramSlidersSection,
+    position: 'right'
+  },
+  {
+    icon: '🎬',
+    title: '拆解动画',
+    description: '点击「▶ 动画」按钮播放拆解动画，观察榫卯结构的安装与拆卸过程，直观理解其构造原理。',
+    target: controlPanel.value?.explodeSection?.$el || controlPanel.value?.explodeSection,
+    position: 'right'
+  }
+])
+
+function completeOnboarding() {
+  try {
+    localStorage.setItem(ONBOARDING_KEY, 'true')
+  } catch (e) {}
+  onboardingVisible.value = false
+}
+
+function checkOnboarding() {
+  try {
+    const completed = localStorage.getItem(ONBOARDING_KEY)
+    if (!completed) {
+      nextTick(() => {
+        onboardingVisible.value = true
+      })
+    }
+  } catch (e) {}
 }
 
 function getStateSnapshot() {
@@ -1276,6 +1330,9 @@ onMounted(async () => {
     historyList.value = [initItem]
     historyIndex.value = 0
   })
+  if (!isSharedView.value) {
+    setTimeout(checkOnboarding, 800)
+  }
 })
 
 watch(() => themeState.theme, (newTheme) => {

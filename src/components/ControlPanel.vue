@@ -222,7 +222,7 @@
       </template>
     </div>
 
-    <div class="px-5 py-4 border-b border-wood-dark/40">
+    <div ref="jointTypeSection" class="px-5 py-4 border-b border-wood-dark/40">
       <label class="block text-xs text-wood-light/70 mb-2 tracking-wider">榫卯类型</label>
       <div class="grid grid-cols-2 gap-2">
         <button
@@ -294,7 +294,7 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto scrollbar-thin px-5 py-4">
+    <div ref="paramSlidersSection" class="flex-1 overflow-y-auto scrollbar-thin px-5 py-4">
       <label class="block text-xs text-wood-light/70 mb-3 tracking-wider">参数调整</label>
       <div v-for="p in currentJointType?.params || []" :key="p.key" class="mb-4">
         <div class="flex justify-between items-center mb-1">
@@ -319,7 +319,7 @@
       </div>
     </div>
 
-    <div class="px-5 py-4 border-t border-wood-dark/40 space-y-3">
+    <div ref="explodeSection" class="px-5 py-4 border-t border-wood-dark/40 space-y-3">
       <div>
         <div class="flex justify-between items-center mb-1">
           <span class="text-sm text-wood-light/90">拆解动画</span>
@@ -653,6 +653,16 @@ import { JOINT_TYPES } from '../models/jointTypes.js'
 import { useTheme } from '../stores/theme.js'
 
 const { state: themeState, toggleTheme } = useTheme()
+
+const jointTypeSection = ref(null)
+const paramSlidersSection = ref(null)
+const explodeSection = ref(null)
+
+defineExpose({
+  jointTypeSection,
+  paramSlidersSection,
+  explodeSection
+})
 
 function handleToggleTheme() {
   toggleTheme()
