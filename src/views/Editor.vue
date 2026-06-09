@@ -92,18 +92,29 @@
         <div class="absolute bottom-4 left-4 z-20 bg-ink/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-wood/30 text-[11px] text-wood-light/70 leading-relaxed">
           <div>🖱️ 拖动旋转 · 滚轮/双指缩放</div>
           <div>📱 单指旋转 · 双指捏合缩放</div>
+          <div class="text-wood/60 mt-1 pt-1 border-t border-wood-dark/30">⌨️ 按 <span class="text-wood font-bold">?</span> 查看所有快捷键</div>
         </div>
 
-        <button
-          class="absolute bottom-4 right-4 z-20 bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
-          @click="historyPanelOpen = true"
-        >
-          <span>📜</span>
-          <span class="tracking-wider font-bold">历史记录</span>
-          <span v-if="historyList.length > 1" class="bg-wood text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-            {{ historyList.length }}
-          </span>
-        </button>
+        <div class="absolute bottom-4 right-4 z-20 flex gap-2">
+          <button
+            class="bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+            @click="shortcutsPanelOpen = true"
+            title="键盘快捷键 (按 ? 呼出)"
+          >
+            <span>⌨️</span>
+            <span class="tracking-wider font-bold">快捷键</span>
+          </button>
+          <button
+            class="bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+            @click="historyPanelOpen = true"
+          >
+            <span>📜</span>
+            <span class="tracking-wider font-bold">历史记录</span>
+            <span v-if="historyList.length > 1" class="bg-wood text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+              {{ historyList.length }}
+            </span>
+          </button>
+        </div>
 
         <div
           v-if="isRecording"
@@ -237,6 +248,11 @@
       @close="shareDialogOpen = false"
     />
 
+    <KeyboardShortcutsPanel
+      :open="shortcutsPanelOpen"
+      @close="shortcutsPanelOpen = false"
+    />
+
     <div v-if="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-ink border border-wood/50 text-wood-light px-5 py-2.5 rounded-lg shadow-2xl text-sm tracking-wider">
       {{ toast }}
     </div>
@@ -244,7 +260,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, reactive, nextTick, shallowRef } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, reactive, nextTick, shallowRef } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SceneManager } from '../utils/SceneManager.js'
 import { JOINT_TYPES, INGFA_NAMES } from '../models/jointTypes.js'
@@ -270,6 +286,7 @@ import HistoryPanel from '../components/HistoryPanel.vue'
 import CompareView from '../components/CompareView.vue'
 import ShareDialog from '../components/ShareDialog.vue'
 import KnowledgeCard from '../components/KnowledgeCard.vue'
+import KeyboardShortcutsPanel from '../components/KeyboardShortcutsPanel.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -303,6 +320,8 @@ const shareLoading = ref(false)
 const isSharedView = ref(false)
 const presets = ref([])
 const currentPresetId = ref(null)
+const shortcutsPanelOpen = ref(false)
+const jointTypeKeys = Object.keys(JOINT_TYPES)
 
 const defaultParams = computed(() => {
   const ps = {}
@@ -984,7 +1003,144 @@ watch(() => [route.params.shareId, route.query.d], async ([newShareId, newDirect
   }
 }, { immediate: false })
 
+function handleKeydown(e) {
+  const target = e.target
+  const tag = target.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
+
+  if (e.key === '?' || e.key === '/' || (e.key === 'Escape' && shortcutsPanelOpen.value)) {
+    if (e.key === 'Escape' && shortcutsPanelOpen.value) {
+      shortcutsPanelOpen.value = false
+      e.preventDefault()
+      return
+    }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+      shortcutsPanelOpen.value = !shortcutsPanelOpen.value
+      e.preventDefault()
+      return
+    }
+  }
+
+  if (e.key === 'Escape') {
+    if (historyPanelOpen.value) historyPanelOpen.value = false
+    if (shortcutsPanelOpen.value) shortcutsPanelOpen.value = false
+    if (showBom.value) showBom.value = false
+    if (shareDialogOpen.value) shareDialogOpen.value = false
+    if (mobilePanelOpen.value) mobilePanelOpen.value = false
+    return
+  }
+
+  if (shortcutsPanelOpen.value) return
+
+  const ctrl = e.ctrlKey || e.metaKey
+
+  switch (e.key.toLowerCase()) {
+    case 'w':
+      if (!ctrl && !e.altKey) {
+        wireframeMode.value = !wireframeMode.value
+        e.preventDefault()
+      }
+      break
+    case 'r':
+      if (!ctrl && !e.altKey) {
+        if (scene.value) scene.value.centerView()
+        e.preventDefault()
+      }
+      break
+    case 'n':
+      if (!ctrl && !e.altKey) {
+        toggleAnnotations()
+        e.preventDefault()
+      }
+      break
+    case 'e':
+      if (!ctrl && !e.altKey) {
+        toggleExplode()
+        e.preventDefault()
+      }
+      break
+    case ' ':
+      if (!ctrl && !e.altKey) {
+        animateExplode()
+        e.preventDefault()
+      }
+      break
+    case 'h':
+      if (!ctrl && !e.altKey) {
+        historyPanelOpen.value = !historyPanelOpen.value
+        e.preventDefault()
+      }
+      break
+    case 'z':
+      if (ctrl) {
+        undoHistory()
+        e.preventDefault()
+      }
+      break
+    case 'b':
+      if (ctrl) {
+        showBom.value = true
+        e.preventDefault()
+      }
+      break
+    case 's':
+      if (ctrl) {
+        handleExportSTLAll()
+        e.preventDefault()
+      }
+      break
+    case 'k':
+      if (ctrl) {
+        handleOpenShare()
+        e.preventDefault()
+      }
+      break
+    case 'ArrowRight':
+      if (!ctrl && !e.altKey) {
+        setExplode(Math.min(1, explodeProgress.value + 0.1))
+        e.preventDefault()
+      }
+      break
+    case 'ArrowLeft':
+      if (!ctrl && !e.altKey) {
+        setExplode(Math.max(0, explodeProgress.value - 0.1))
+        e.preventDefault()
+      }
+      break
+    case 'ArrowUp':
+      if (!ctrl && !e.altKey) {
+        const idx = jointTypeKeys.indexOf(currentType.value)
+        const prevIdx = (idx - 1 + jointTypeKeys.length) % jointTypeKeys.length
+        selectType(jointTypeKeys[prevIdx])
+        e.preventDefault()
+      }
+      break
+    case 'ArrowDown':
+      if (!ctrl && !e.altKey) {
+        const idx = jointTypeKeys.indexOf(currentType.value)
+        const nextIdx = (idx + 1) % jointTypeKeys.length
+        selectType(jointTypeKeys[nextIdx])
+        e.preventDefault()
+      }
+      break
+  }
+
+  if (!ctrl && !e.altKey && !e.shiftKey) {
+    const num = parseInt(e.key)
+    if (num >= 1 && num <= jointTypeKeys.length) {
+      selectType(jointTypeKeys[num - 1])
+      e.preventDefault()
+    }
+  }
+
+  if (ctrl && e.key.toLowerCase() === 'r') {
+    resetToDefault()
+    e.preventDefault()
+  }
+}
+
 onMounted(async () => {
+  window.addEventListener('keydown', handleKeydown)
   await nextTick()
   refreshProjects()
   refreshPresets()
@@ -1007,5 +1163,9 @@ onMounted(async () => {
     historyList.value = [initItem]
     historyIndex.value = 0
   })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
