@@ -95,25 +95,64 @@
           <div class="text-wood/60 mt-1 pt-1 border-t border-wood-dark/30">⌨️ 按 <span class="text-wood font-bold">?</span> 查看所有快捷键</div>
         </div>
 
-        <div class="absolute bottom-4 right-4 z-20 flex gap-2">
-          <button
-            class="bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
-            @click="shortcutsPanelOpen = true"
-            title="键盘快捷键 (按 ? 呼出)"
-          >
-            <span>⌨️</span>
-            <span class="tracking-wider font-bold">快捷键</span>
-          </button>
-          <button
-            class="bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
-            @click="historyPanelOpen = true"
-          >
-            <span>📜</span>
-            <span class="tracking-wider font-bold">历史记录</span>
-            <span v-if="historyList.length > 1" class="bg-wood text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-              {{ historyList.length }}
-            </span>
-          </button>
+        <div class="absolute bottom-4 right-4 z-20 flex flex-col items-end gap-2">
+          <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden shadow-lg">
+            <button
+              class="px-3 py-2 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all border-r border-wood-dark/40"
+              @click="handleViewPreset('front')"
+              title="正视 (Front)"
+            >
+              正视
+            </button>
+            <button
+              class="px-3 py-2 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all border-r border-wood-dark/40"
+              @click="handleViewPreset('side')"
+              title="侧视 (Side)"
+            >
+              侧视
+            </button>
+            <button
+              class="px-3 py-2 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all border-r border-wood-dark/40"
+              @click="handleViewPreset('top')"
+              title="俯视 (Top)"
+            >
+              俯视
+            </button>
+            <button
+              class="px-3 py-2 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all border-r border-wood-dark/40"
+              @click="handleViewPreset('isometric')"
+              title="45°等轴测 (Isometric)"
+            >
+              45°等轴
+            </button>
+            <button
+              class="px-3 py-2 text-xs tracking-wider text-wood hover:bg-wood-dark/50 transition-all font-bold"
+              @click="handleResetView"
+              title="重置视角"
+            >
+              ↺ 重置
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <button
+              class="bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+              @click="shortcutsPanelOpen = true"
+              title="键盘快捷键 (按 ? 呼出)"
+            >
+              <span>⌨️</span>
+              <span class="tracking-wider font-bold">快捷键</span>
+            </button>
+            <button
+              class="bg-ink/80 backdrop-blur-sm px-4 py-2.5 rounded-lg border border-wood/30 text-wood text-sm hover:bg-ink hover:border-wood/60 transition-all flex items-center gap-2 shadow-lg"
+              @click="historyPanelOpen = true"
+            >
+              <span>📜</span>
+              <span class="tracking-wider font-bold">历史记录</span>
+              <span v-if="historyList.length > 1" class="bg-wood text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                {{ historyList.length }}
+              </span>
+            </button>
+          </div>
         </div>
 
         <div
@@ -499,6 +538,26 @@ function toggleAnnotations() {
   showAnnotations.value = !showAnnotations.value
   if (scene.value) scene.value.setShowAnnotations(showAnnotations.value)
   addHistory(showAnnotations.value ? '显示标注' : '隐藏标注', 'toggle-annotations')
+}
+
+const VIEW_PRESET_LABELS = {
+  front: '正视',
+  side: '侧视',
+  top: '俯视',
+  isometric: '45°等轴测'
+}
+
+function handleViewPreset(preset) {
+  if (!scene.value) return
+  scene.value.setViewPreset(preset)
+  const label = VIEW_PRESET_LABELS[preset] || preset
+  showToast(`已切换到${label}`)
+}
+
+function handleResetView() {
+  if (!scene.value) return
+  scene.value.resetView()
+  showToast('视角已重置')
 }
 
 function getSTLFilename(suffix = '') {
@@ -1136,6 +1195,31 @@ function handleKeydown(e) {
   if (ctrl && e.key.toLowerCase() === 'r') {
     resetToDefault()
     e.preventDefault()
+  }
+
+  if (!ctrl && !e.altKey && !e.shiftKey) {
+    switch (e.key) {
+      case 'F1':
+        handleViewPreset('front')
+        e.preventDefault()
+        break
+      case 'F2':
+        handleViewPreset('side')
+        e.preventDefault()
+        break
+      case 'F3':
+        handleViewPreset('top')
+        e.preventDefault()
+        break
+      case 'F4':
+        handleViewPreset('isometric')
+        e.preventDefault()
+        break
+      case 'F5':
+        handleResetView()
+        e.preventDefault()
+        break
+    }
   }
 }
 

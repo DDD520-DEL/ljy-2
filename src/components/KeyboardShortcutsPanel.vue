@@ -69,6 +69,11 @@ const shortcutGroups = [
     items: [
       { label: '切换线框 / 实体模式', keys: ['W'] },
       { label: '重置视角（居中）', keys: ['R'] },
+      { label: '正视', keys: ['F1'] },
+      { label: '侧视', keys: ['F2'] },
+      { label: '俯视', keys: ['F3'] },
+      { label: '45°等轴测', keys: ['F4'] },
+      { label: '重置视角（平滑过渡）', keys: ['F5'] },
       { label: '切换标注显示', keys: ['N'] },
       { label: '显示 / 隐藏快捷键面板', keys: ['?'] }
     ]

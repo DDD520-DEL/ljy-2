@@ -581,7 +581,87 @@ export class SceneManager {
   _animate = () => {
     this._animId = requestAnimationFrame(this._animate)
     this.controls.update()
+    this._updateCameraAnimation()
     this.renderer.render(this.scene, this.camera)
+  }
+
+  _getModelBounds() {
+    if (this.componentMeshes.length === 0) {
+      return { center: new THREE.Vector3(0, 0, 0), maxDim: 200 }
+    }
+    const box = new THREE.Box3()
+    for (const g of this.componentMeshes) {
+      const b = new THREE.Box3().setFromObject(g)
+      box.union(b)
+    }
+    const center = new THREE.Vector3()
+    box.getCenter(center)
+    const size = new THREE.Vector3()
+    box.getSize(size)
+    const maxDim = Math.max(size.x, size.y, size.z)
+    return { center, maxDim }
+  }
+
+  _animateCameraTo(targetPosition, targetLookAt, duration = 800) {
+    if (this._cameraAnim) {
+      cancelAnimationFrame(this._cameraAnim.rafId)
+    }
+    const startPosition = this.camera.position.clone()
+    const startLookAt = this.controls.target.clone()
+    const t0 = performance.now()
+    const anim = { rafId: null }
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / duration)
+      const ease = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2
+      this.camera.position.lerpVectors(startPosition, targetPosition, ease)
+      this.controls.target.lerpVectors(startLookAt, targetLookAt, ease)
+      this.camera.lookAt(this.controls.target)
+      const offset = this.camera.position.clone().sub(this.controls.target)
+      this.controls.spherical.setFromVector3(offset)
+      if (k < 1) {
+        anim.rafId = requestAnimationFrame(step)
+      } else {
+        this._cameraAnim = null
+      }
+    }
+    anim.rafId = requestAnimationFrame(step)
+    this._cameraAnim = anim
+  }
+
+  _updateCameraAnimation() {
+  }
+
+  setViewPreset(preset) {
+    const { center, maxDim } = this._getModelBounds()
+    const dist = maxDim * 2.2
+    let dir
+    switch (preset) {
+      case 'front':
+        dir = new THREE.Vector3(0, 0, 1)
+        break
+      case 'side':
+        dir = new THREE.Vector3(1, 0, 0)
+        break
+      case 'top':
+        dir = new THREE.Vector3(0, 1, 0)
+        break
+      case 'isometric':
+        dir = new THREE.Vector3(1, 1, 1).normalize()
+        break
+      default:
+        dir = new THREE.Vector3(1, 0.8, 1).normalize()
+        break
+    }
+    const targetPos = center.clone().add(dir.multiplyScalar(dist))
+    this._animateCameraTo(targetPos, center)
+  }
+
+  resetView() {
+    const { center, maxDim } = this._getModelBounds()
+    const dist = maxDim * 2.2
+    const dir = new THREE.Vector3(1, 0.8, 1).normalize()
+    const targetPos = center.clone().add(dir.multiplyScalar(dist))
+    this._animateCameraTo(targetPos, center)
   }
 
   dispose() {
