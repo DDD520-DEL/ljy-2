@@ -224,7 +224,23 @@
 
     <div ref="jointTypeSection" class="px-5 py-4 border-b border-wood-dark/40">
       <label class="block text-xs text-wood-light/70 mb-2 tracking-wider">榫卯类型</label>
-      <div class="grid grid-cols-2 gap-2">
+      <div class="relative mb-3">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-wood-light/40 text-sm">🔍</span>
+        <input
+          v-model="jointTypeSearch"
+          type="text"
+          placeholder="搜索榫卯类型..."
+          class="w-full bg-wood-dark/30 border border-wood-dark/50 rounded pl-9 pr-3 py-2 text-sm text-wood-light placeholder:text-wood-light/30 focus:outline-none focus:border-wood/60 transition-all"
+        />
+        <button
+          v-if="jointTypeSearch"
+          @click="jointTypeSearch = ''"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-wood-light/40 hover:text-wood-light transition-all text-sm"
+        >
+          ✕
+        </button>
+      </div>
+      <div v-if="jointTypesList.length > 0" class="grid grid-cols-2 gap-2">
         <button
           v-for="jt in jointTypesList"
           :key="jt.id"
@@ -238,6 +254,9 @@
         >
           <div class="font-bold tracking-wide">{{ jt.name }}</div>
         </button>
+      </div>
+      <div v-else class="text-xs text-wood-light/40 py-3 text-center italic">
+        未找到匹配的榫卯类型
       </div>
       <p v-if="currentJointType" class="mt-2 text-xs text-wood-light/50 leading-relaxed">
         {{ currentJointType.description }}
@@ -741,7 +760,17 @@ const savePresetError = ref('')
 const deletePresetDialogOpen = ref(false)
 const deletePresetTarget = ref(null)
 
-const jointTypesList = computed(() => Object.values(JOINT_TYPES))
+const jointTypeSearch = ref('')
+
+const jointTypesList = computed(() => {
+  const all = Object.values(JOINT_TYPES)
+  const keyword = jointTypeSearch.value.trim().toLowerCase()
+  if (!keyword) return all
+  return all.filter(jt =>
+    jt.name.toLowerCase().includes(keyword) ||
+    (jt.description && jt.description.toLowerCase().includes(keyword))
+  )
+})
 const currentJointType = computed(() => JOINT_TYPES[props.currentType])
 
 watch(projectPanelOpen, open => {
