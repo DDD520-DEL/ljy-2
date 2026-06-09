@@ -126,6 +126,13 @@
 
       <div class="flex gap-3 px-6 py-4 border-t border-wood-dark/40">
         <button
+          @click="$emit('enter-print')"
+          class="flex-1 px-4 py-2 bg-gradient-to-r from-wood to-wood-dark text-white rounded border border-wood-light hover:from-wood-dark hover:to-wood transition-all text-sm tracking-widest font-bold shadow-lg flex items-center justify-center gap-2"
+        >
+          <span>🖨</span>
+          <span>打印清单</span>
+        </button>
+        <button
           @click="exportPDF"
           :disabled="exporting"
           class="flex-1 px-4 py-2 bg-wood text-white rounded border border-wood-light hover:bg-wood-dark transition-all text-sm tracking-widest font-bold disabled:opacity-50 disabled:cursor-not-allowed"
@@ -161,7 +168,7 @@ const props = defineProps({
   projectName: { type: String, default: '' }
 })
 
-defineEmits(['close'])
+defineEmits(['close', 'enter-print'])
 
 const contentRef = ref(null)
 const exporting = ref(false)

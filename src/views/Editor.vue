@@ -1,6 +1,103 @@
 <template>
-  <div class="w-full h-full flex text-white" style="background-color: var(--color-ink);">
-    <template v-if="viewMode === 'single'">
+  <div class="w-full h-full" :class="printMode ? 'print-view-root' : 'flex text-white'" :style="printMode ? '' : 'background-color: var(--color-ink);'">
+    <template v-if="printMode">
+      <div class="print-toolbar">
+        <button
+          @click="handlePrint"
+          class="px-5 py-2 bg-wood text-white rounded border border-wood-light hover:bg-wood-dark transition-all text-sm tracking-widest font-bold shadow-lg flex items-center gap-2"
+        >
+          <span>🖨</span>
+          <span>打印</span>
+        </button>
+        <button
+          @click="printMode = false"
+          class="px-5 py-2 bg-gray-600 text-white rounded border border-gray-400 hover:bg-gray-700 transition-all text-sm tracking-widest font-bold shadow-lg flex items-center gap-2"
+        >
+          <span>✕</span>
+          <span>退出打印</span>
+        </button>
+      </div>
+
+      <div class="print-page a4-portrait">
+        <div class="print-header">
+          <div class="print-title">物料清单 BOM</div>
+          <div class="print-subtitle">营造法式 · 构件备料</div>
+          <div v-if="printProjectName" class="print-project">
+            <span class="print-label">项目名称</span>
+            <span class="print-value">{{ printProjectName }}</span>
+          </div>
+          <div class="print-joint">
+            <span class="print-label">榫卯类型</span>
+            <span class="print-value">{{ currentJointInfo.name }}</span>
+          </div>
+        </div>
+
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th class="print-th">序号</th>
+              <th class="print-th">构件名称</th>
+              <th class="print-th">净料尺寸 (mm)</th>
+              <th class="print-th">毛料尺寸 (mm)</th>
+              <th class="print-th">余量标注</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(c, i) in bomComponents" :key="c.id" class="print-tr">
+              <td class="print-td print-td-num">{{ String(i + 1).padStart(2, '0') }}</td>
+              <td class="print-td">
+                <span class="print-color-dot" :style="{ background: printColorHex(i) }"></span>
+                {{ c.name }}
+              </td>
+              <td class="print-td print-td-mono">{{ c.netSize.w.toFixed(0) }} × {{ c.netSize.h.toFixed(0) }} × {{ c.netSize.l.toFixed(0) }}</td>
+              <td class="print-td print-td-mono">{{ c.rawSize.w.toFixed(0) }} × {{ c.rawSize.h.toFixed(0) }} × {{ c.rawSize.l.toFixed(0) }}</td>
+              <td class="print-td">{{ c.allowance }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="print-notes">
+          <div class="print-notes-title">📐 备料说明</div>
+          <ul class="print-notes-list">
+            <li>净料尺寸：刨光、开榫后的实际装配尺寸</li>
+            <li>毛料尺寸：已包含榫头余量、刨削余量的下料尺寸</li>
+            <li>建议再预留 5mm~10mm 截断余量以备修整</li>
+          </ul>
+        </div>
+
+        <div class="print-summary">
+          <div class="print-summary-title">🪵 用料估算汇总</div>
+          <div class="print-summary-grid">
+            <div class="print-summary-item">
+              <div class="print-summary-label">总毛料体积</div>
+              <div class="print-summary-value">{{ formatPrintVolume(printTotalRawVolume) }}</div>
+              <div class="print-summary-sub">= {{ bomComponents.length }} 件构件</div>
+            </div>
+            <div class="print-summary-item">
+              <div class="print-summary-label">总净料体积</div>
+              <div class="print-summary-value">{{ formatPrintVolume(printTotalNetVolume) }}</div>
+              <div class="print-summary-sub">刨削损耗率 ~{{ printWasteRate }}%</div>
+            </div>
+            <div class="print-summary-item">
+              <div class="print-summary-label">预估重量（毛料）</div>
+              <div class="print-summary-value">{{ formatPrintWeight(printTotalRawWeight) }}</div>
+              <div class="print-summary-sub">ρ = {{ printSelectedWood.density.toFixed(2) }} g/cm³ · {{ printSelectedWood.name }}</div>
+            </div>
+            <div class="print-summary-item">
+              <div class="print-summary-label">预估重量（净料）</div>
+              <div class="print-summary-value">{{ formatPrintWeight(printTotalNetWeight) }}</div>
+              <div class="print-summary-sub">实际成品重量</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="print-footer">
+          <span>生成时间：{{ formatPrintDate(new Date()) }}</span>
+        </div>
+      </div>
+    </template>
+
+    <template v-else-if="viewMode === 'single'">
       <div class="hidden md:block w-80 lg:w-96 flex-shrink-0 z-10 shadow-2xl">
         <ControlPanel
           ref="controlPanel"
@@ -280,6 +377,7 @@
       :joint-name="currentJointInfo.name"
       :project-name="currentProjectName"
       @close="showBom = false"
+      @enter-print="handleEnterPrint"
     />
 
     <HistoryPanel
@@ -324,7 +422,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, reactive, nextTick, shallowRef } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SceneManager } from '../utils/SceneManager.js'
-import { JOINT_TYPES, INGFA_NAMES } from '../models/jointTypes.js'
+import { JOINT_TYPES, INGFA_NAMES, COMPONENT_COLORS, WOOD_TYPES } from '../models/jointTypes.js'
 import {
   listProjects,
   saveProject,
@@ -358,6 +456,7 @@ const auth = useAuth()
 const { state: themeState, initTheme } = useTheme()
 
 const viewMode = ref('single')
+const printMode = ref(false)
 const canvasContainer = ref(null)
 const scene = shallowRef(null)
 const currentType = ref('straight')
@@ -427,6 +526,86 @@ const bomComponents = computed(() => {
     name: names[i] ? `${names[i].name}（${c.name}）` : c.name
   }))
 })
+
+const printProjectName = computed(() => currentProjectName.value)
+
+function printComponentRawVolume(c) {
+  return c.rawSize.w * c.rawSize.h * c.rawSize.l
+}
+
+function printComponentNetVolume(c) {
+  return c.netSize.w * c.netSize.h * c.netSize.l
+}
+
+const printTotalRawVolumeMm3 = computed(() => {
+  return bomComponents.value.reduce((sum, c) => sum + printComponentRawVolume(c), 0)
+})
+
+const printTotalNetVolumeMm3 = computed(() => {
+  return bomComponents.value.reduce((sum, c) => sum + printComponentNetVolume(c), 0)
+})
+
+const printTotalRawVolume = computed(() => printTotalRawVolumeMm3.value)
+const printTotalNetVolume = computed(() => printTotalNetVolumeMm3.value)
+
+const printWasteRate = computed(() => {
+  if (printTotalRawVolumeMm3.value === 0) return '0.0'
+  const rate = (1 - printTotalNetVolumeMm3.value / printTotalRawVolumeMm3.value) * 100
+  return rate.toFixed(1)
+})
+
+const printSelectedWood = computed(() => WOOD_TYPES[0])
+
+const printTotalRawWeight = computed(() => {
+  const volumeCm3 = printTotalRawVolumeMm3.value / 1000
+  return volumeCm3 * printSelectedWood.value.density
+})
+
+const printTotalNetWeight = computed(() => {
+  const volumeCm3 = printTotalNetVolumeMm3.value / 1000
+  return volumeCm3 * printSelectedWood.value.density
+})
+
+function formatPrintVolume(mm3) {
+  if (mm3 >= 1e9) {
+    return (mm3 / 1e9).toFixed(3) + ' m³'
+  } else if (mm3 >= 1e6) {
+    return (mm3 / 1e6).toFixed(2) + ' dm³'
+  } else if (mm3 >= 1e3) {
+    return (mm3 / 1e3).toFixed(1) + ' cm³'
+  }
+  return mm3.toFixed(0) + ' mm³'
+}
+
+function formatPrintWeight(grams) {
+  if (grams >= 1000) {
+    return (grams / 1000).toFixed(2) + ' kg'
+  }
+  return grams.toFixed(1) + ' g'
+}
+
+function printColorHex(i) {
+  const c = COMPONENT_COLORS[i % COMPONENT_COLORS.length]
+  return '#' + c.toString(16).padStart(6, '0')
+}
+
+function formatPrintDate(d) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${day} ${hh}:${mm}`
+}
+
+function handleEnterPrint() {
+  showBom.value = false
+  printMode.value = true
+}
+
+function handlePrint() {
+  window.print()
+}
 
 function showToast(msg, duration = 2000) {
   toast.value = msg
@@ -1208,6 +1387,26 @@ function handleKeydown(e) {
   const tag = target.tagName
   if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
 
+  const ctrl = e.ctrlKey || e.metaKey
+
+  if (ctrl && e.key.toLowerCase() === 'p') {
+    e.preventDefault()
+    if (printMode.value) {
+      window.print()
+    } else {
+      handleEnterPrint()
+    }
+    return
+  }
+
+  if (printMode.value) {
+    if (e.key === 'Escape') {
+      printMode.value = false
+      e.preventDefault()
+    }
+    return
+  }
+
   if (e.key === '?' || e.key === '/' || (e.key === 'Escape' && shortcutsPanelOpen.value)) {
     if (e.key === 'Escape' && shortcutsPanelOpen.value) {
       shortcutsPanelOpen.value = false
@@ -1231,8 +1430,6 @@ function handleKeydown(e) {
   }
 
   if (shortcutsPanelOpen.value) return
-
-  const ctrl = e.ctrlKey || e.metaKey
 
   switch (e.key.toLowerCase()) {
     case 'w':
