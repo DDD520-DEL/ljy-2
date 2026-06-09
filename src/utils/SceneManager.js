@@ -19,6 +19,10 @@ export class SceneManager {
     this.animationRecorder = null
     this.isRecording = false
     this._frameCaptureInterval = null
+    this._fpsLastTime = performance.now()
+    this._fpsFrameCount = 0
+    this._fps = 0
+    this._fpsCallback = null
     this._init()
     this._animate()
   }
@@ -583,6 +587,30 @@ export class SceneManager {
     this.controls.update()
     this._updateCameraAnimation()
     this.renderer.render(this.scene, this.camera)
+    this._fpsFrameCount++
+    const now = performance.now()
+    if (now - this._fpsLastTime >= 500) {
+      this._fps = Math.round((this._fpsFrameCount * 1000) / (now - this._fpsLastTime))
+      this._fpsFrameCount = 0
+      this._fpsLastTime = now
+      if (this._fpsCallback) this._fpsCallback(this._fps)
+    }
+  }
+
+  setFPSCallback(callback) {
+    this._fpsCallback = callback
+  }
+
+  getStatus() {
+    return {
+      fps: this._fps,
+      cameraPosition: {
+        x: this.camera.position.x.toFixed(1),
+        y: this.camera.position.y.toFixed(1),
+        z: this.camera.position.z.toFixed(1)
+      },
+      componentCount: this.componentMeshes.length
+    }
   }
 
   _getModelBounds() {

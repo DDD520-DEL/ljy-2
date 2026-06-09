@@ -89,13 +89,13 @@
           </div>
         </div>
 
-        <div class="absolute bottom-4 left-4 z-20 bg-ink/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-wood/30 text-[11px] text-wood-light/70 leading-relaxed">
+        <div class="absolute bottom-14 left-4 z-20 bg-ink/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-wood/30 text-[11px] text-wood-light/70 leading-relaxed">
           <div>🖱️ 拖动旋转 · 滚轮/双指缩放</div>
           <div>📱 单指旋转 · 双指捏合缩放</div>
           <div class="text-wood/60 mt-1 pt-1 border-t border-wood-dark/30">⌨️ 按 <span class="text-wood font-bold">?</span> 查看所有快捷键</div>
         </div>
 
-        <div class="absolute bottom-4 right-4 z-20 flex flex-col items-end gap-2">
+        <div class="absolute bottom-14 right-4 z-20 flex flex-col items-end gap-2">
           <div class="flex bg-ink/80 backdrop-blur-sm rounded-lg border border-wood/30 overflow-hidden shadow-lg">
             <button
               class="px-3 py-2 text-xs tracking-wider text-wood-light hover:bg-wood-dark/50 transition-all border-r border-wood-dark/40"
@@ -172,6 +172,15 @@
         >
           ⚙ 参数
         </button>
+
+        <div class="absolute bottom-0 left-0 right-0 z-20">
+          <StatusBar
+            :fps="statusFPS"
+            :camera-position="statusCameraPosition"
+            :joint-type-name="currentJointInfo.name"
+            :component-count="statusComponentCount"
+          />
+        </div>
 
         <div v-if="mobilePanelOpen" class="absolute inset-0 z-30 md:hidden">
           <div class="absolute inset-0 bg-black/50" @click="mobilePanelOpen = false"></div>
@@ -326,6 +335,7 @@ import CompareView from '../components/CompareView.vue'
 import ShareDialog from '../components/ShareDialog.vue'
 import KnowledgeCard from '../components/KnowledgeCard.vue'
 import KeyboardShortcutsPanel from '../components/KeyboardShortcutsPanel.vue'
+import StatusBar from '../components/StatusBar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -361,6 +371,10 @@ const presets = ref([])
 const currentPresetId = ref(null)
 const shortcutsPanelOpen = ref(false)
 const jointTypeKeys = Object.keys(JOINT_TYPES)
+const statusFPS = ref(0)
+const statusCameraPosition = ref({ x: '0.0', y: '0.0', z: '0.0' })
+const statusComponentCount = ref(0)
+let _statusUpdateInterval = null
 
 const defaultParams = computed(() => {
   const ps = {}
@@ -1231,7 +1245,17 @@ onMounted(async () => {
   await initAuth()
   if (canvasContainer.value) {
     scene.value = new SceneManager(canvasContainer.value)
+    scene.value.setFPSCallback((fps) => {
+      statusFPS.value = fps
+    })
     loadJoint()
+    _statusUpdateInterval = setInterval(() => {
+      if (scene.value) {
+        const s = scene.value.getStatus()
+        statusCameraPosition.value = s.cameraPosition
+        statusComponentCount.value = s.componentCount
+      }
+    }, 100)
   }
   await nextTick()
   await checkShareInUrl()
@@ -1251,5 +1275,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  if (_statusUpdateInterval) {
+    clearInterval(_statusUpdateInterval)
+    _statusUpdateInterval = null
+  }
 })
 </script>
